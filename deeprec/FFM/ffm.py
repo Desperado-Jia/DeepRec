@@ -54,6 +54,8 @@ def model_fn(features, labels, mode, params):
     use_global_bias = params["use_global_bias"]
     use_linear = params["use_linear"]
     lamb = params["lamb"]
+    optimizer = params["optimizer"]
+    learning_rate = params["learning_rate"]
     dtype = params["dtype"]
     name_feat_inds = params["name_feat_inds"]
     name_feat_vals = params["name_feat_vals"]
@@ -165,7 +167,26 @@ def model_fn(features, labels, mode, params):
                         name="regularization") # A scalar, representing the regularization loss of current batch training dataset
     loss += reg
 
-    return loss
+    # ----------Provide an estimator spec for `ModeKeys.EVAL` mode----------
+    if mode == tf.estimator.ModeKeys.EVAL:
+        if task == "binary":
+            eval_metric_ops = {
+                "accuracy": tf.metrics.accuracy(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
+                "precision": tf.metrics.precision(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
+                "recall": tf.metrics.recall(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
+                "auc": tf.metrics.auc(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT])
+            }
+        elif task == "regression":
+            eval_metric_ops = {
+                "rmse": tf.metrics.root_mean_squared_error(labels=labels, predictions=predictions[NAME_REGRESSION_OUTPUT])
+            }
+        else:
+            raise ValueError(VALUE_ERROR_WARNING_TASK)
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, predictions=predictions, eval_metric_ops=eval_metric_ops)
+
+    # ----------Build optimizer----------
+    global_step = tf.train.get_or_create_global_step(graph=tf.get_default_graph()) # Define a global step for training step counter
+    
 
 
 if __name__ == '__main__':
