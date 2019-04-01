@@ -1,4 +1,4 @@
-#DeepRec
+# DeepRec
 
 DeepRec is an easy-to-use, end-to-end and scalable toolkit of deep-learning based recommender system models (e.g. Click Through Rate) models which can be used for building your own custom recommender system easily.
 
