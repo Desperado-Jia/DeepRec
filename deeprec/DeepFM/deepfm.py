@@ -302,8 +302,8 @@ def model_fn(features, labels, mode, params):
     NAME_CLASSIFICATION_OUTPUT = "class"
     NAME_REGRESSION_OUTPUT = "pred"
 
-    VALUE_ERROR_WARNING_TASK = "Argument of model function <task>: \"{}\" is not supported. It must be in [\"binary\", \"regression\"]".format(task)
-    VALUE_ERROR_WARNING_OPTIMIZER = "Argument value of <opt>: {} is not supported.".format(optimizer)
+    VALUE_ERROR_WARNING_TASK = "Argument of model function <task>: \"{}\" is invalid. It must be in [\"binary\", \"regression\"]".format(task)
+    VALUE_ERROR_WARNING_OPTIMIZER = "Argument value of <optimizer>: {} is not supported.".format(optimizer)
 
     # ----------Hyperparameters for exponential decay(*manual optional*)----------
     DECAY_STEPS = 5000
@@ -430,7 +430,7 @@ def model_fn(features, labels, mode, params):
                     NAME_REGRESSION_OUTPUT: logits
                 }
             else:
-                raise NotImplementedError(VALUE_ERROR_WARNING_TASK)
+                raise ValueError(VALUE_ERROR_WARNING_TASK)
 
     # ----------Provide an estimator spec for `ModeKeys.PREDICTION` mode----------
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -449,7 +449,7 @@ def model_fn(features, labels, mode, params):
                               axis=0,
                               keepdims=False) # A scalar, representing the training loss of current batch training dataset
     else:
-        raise NotImplementedError(VALUE_ERROR_WARNING_TASK)
+        raise ValueError(VALUE_ERROR_WARNING_TASK)
 
     reg = tf.reduce_sum(input_tensor=tf.get_collection(key=tf.GraphKeys.REGULARIZATION_LOSSES),
                         axis=0,
@@ -471,7 +471,7 @@ def model_fn(features, labels, mode, params):
                 "rmse": tf.metrics.root_mean_squared_error(labels=labels, predictions=predictions[NAME_REGRESSION_OUTPUT])
             }
         else:
-            raise NotImplementedError(VALUE_ERROR_WARNING_TASK)
+            raise ValueError(VALUE_ERROR_WARNING_TASK)
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, predictions=predictions, eval_metric_ops=eval_metric_ops)
 
     # ----------Build optimizer----------
