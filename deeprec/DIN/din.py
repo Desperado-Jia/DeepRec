@@ -367,7 +367,7 @@ def input_fn(filenames,
         # ----------Process user behaviors (associated item indices)----------
         feat_inds_beha = tf.string_to_number(string_tensor=columns[START_COLUMN_FEAT_USER_BEHAVIORS: END_COLUMN_FEAT_USER_BEHAVIORS], out_type=tf.int32)
 
-        features = {
+        feats = {
             name_feat_inds_user: feat_inds_user,
             name_feat_vals_user: feat_vals_user,
             name_feat_inds_item: feat_inds_item,
@@ -377,7 +377,7 @@ def input_fn(filenames,
             name_feat_inds_candidate: feat_inds_cand,
             name_feat_inds_behaviors: feat_inds_beha
         }
-        return features, label
+        return feats, label
 
     dataset = tf.data.TextLineDataset(filenames=filenames, buffer_size=buffer_size). \
         map(map_func=map_func, num_parallel_calls=num_parallel_calls)
