@@ -141,7 +141,7 @@ def input_fn(filenames,
              name_feat_inds="inds",
              name_feat_vals="vals"):
     """
-    The input function for loading sparse multi-field dataset. The columns are
+    The input function for loading multi-field sparse dataset. The columns are
     separeted by argument delimiter(e.g. " ") with the following schema (libsvm format):
     <label> <index 1>:<value 1> ... <index j>:<value j> ... <index d>:<value d> (d is the field size of dataset)
     e.g.
@@ -151,7 +151,8 @@ def input_fn(filenames,
         separator is always equal to ":".
     Note:
         1. The input function is only used for dataset with one-hot active value in each field.
-        2. The input function can be used for binary classification and regression task:
+        2. In each line, the order of all fields must be fixed.
+        3. The input function can be used for binary classification and regression task:
             binary classification: <label> in {0, 1};
             regression: <label> in (-inf, inf).
 
