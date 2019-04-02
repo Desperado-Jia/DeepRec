@@ -409,7 +409,7 @@ def model_fn(features, labels, mode, params):
                                    kernel_regularizer=None, # *manual optional*
                                    trainable=True,
                                    name="mlp-dense-output") # A tensor in shape of (None, 1)
-            ymlp = tf.squeeze(input=ymlp) # A tensor in shape of (None)
+            ymlp = tf.squeeze(input=ymlp, axis=1) # A tensor in shape of (None)
 
         with tf.name_scope(name="output"):
             if use_global_bias == False and use_linear == False:

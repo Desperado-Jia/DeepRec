@@ -44,7 +44,7 @@ def input_fn(filenames,
         dataset = dataset.shuffle(buffer_size=buffer_size)
     dataset = dataset. \
         repeat(count=epochs). \
-        batch(batch_size=batch_size, drop_remainder=True)
+        batch(batch_size=batch_size, drop_remainder=False)
     dataset = dataset.prefetch(buffer_size=1)
     iterator = dataset.make_one_shot_iterator()
     batch_feats, batch_labels = iterator.get_next()
@@ -54,10 +54,12 @@ def input_fn(filenames,
 def model_fn(features, labels, mode, params):
     # ----------Declare all hyperparameters from params----------
     task = params["task"]
+    output_size = params["output_size"]
     field_size_numerical = params["field_size_numerical"]
     field_size_categorical = params["field_size_categorical"]
     feat_size_categorical = params["feat_size_categorical"]
     embed_size = params["embed_size"]
+    num_cross_hidden_layers = params["num_cross_hidden_layers"]
     deep_hidden_sizes = params["deep_hidden_sizes"]
     dropouts = params["dropouts"]
     use_global_bias = params["use_global_bias"]
@@ -79,26 +81,28 @@ def model_fn(features, labels, mode, params):
         with tf.name_scope(name="inputs"):
             valsn = features[name_feat_vals_numerical]
             indsc = features[name_feat_inds_categorical] # A tensor in shape of (None, field_size_categorical)
+            batch = tf.shape(input=valsn)[0]
+            dim = field_size_numerical + field_size_categorical * embed_size
 
         with tf.name_scope(name="embed-and-stack-layer"):
             V = tf.get_variable(name="V",
                                 shape=[feat_size_categorical, embed_size],
                                 dtype=dtype,
-                                initializer=xavier_initializer(uniform=False, dtype=dtype),
+                                initializer=xavier_initializer(uniform=False, seed=seed, dtype=dtype),
                                 regularizer=None)
             embed = tf.nn.embedding_lookup(params=V, ids=indsc) # A tensor in shape of (None, field_size_categorical, embed_size)
             embed = tf.reshape(tensor=embed, shape=[-1, field_size_categorical * embed_size])
-            x = tf.concat(values=[valsn, embed], axis=1)
+            x = tf.reshape(tensor=tf.concat(values=[valsn, embed], axis=-1), shape=[batch, dim])
 
         with tf.name_scope(name="deep-part"):
-            # ydeep = tf.reshape(tensor=x, shape=[-1, field_size_numerical + field_size_categorical * embed_size])
+            ydeep = x
             for l in range(len(deep_hidden_sizes)):
                 # -----The order for each hidden layer is: matmul => bn => relu => dropout => matmul => ...
                 ydeep = tf.layers.dense(inputs=ydeep,
                                         units=deep_hidden_sizes[l],
                                         activation=None,
                                         use_bias=use_deep_hidden_bias,
-                                        kernel_initializer=xavier_initializer(uniform=True, dtype=dtype),
+                                        kernel_initializer=xavier_initializer(uniform=True, seed=seed, dtype=dtype),
                                         bias_initializer=tf.zeros_initializer(dtype=dtype),
                                         kernel_regularizer=l2_regularizer(scale=lamb),
                                         bias_regularizer=None,
@@ -121,11 +125,48 @@ def model_fn(features, labels, mode, params):
                 ydeep = tf.nn.relu(features=ydeep)
                 if dropouts != None:
                     ydeep = tf.layers.dropout(inputs=ydeep,
-                                             rate=dropouts[l],
-                                             seed=seed,
-                                             training=(mode == tf.estimator.ModeKeys.TRAIN))
+                                              rate=dropouts[l],
+                                              seed=seed,
+                                              training=(mode == tf.estimator.ModeKeys.TRAIN))
 
-    return ydeep
+        with tf.name_scope(name="cross-part"):
+            Wc = tf.get_variable(name="Wc",
+                                 shape=[num_cross_hidden_layers, dim],
+                                 dtype=dtype,
+                                 initializer=xavier_initializer(uniform=False, seed=seed, dtype=dtype),
+                                 regularizer=l2_regularizer(scale=lamb))
+            bc = tf.get_variable(name="bc",
+                                 shape=[num_cross_hidden_layers, dim],
+                                 dtype=dtype,
+                                 initializer=xavier_initializer(uniform=False, seed=seed, dtype=dtype),
+                                 regularizer=l2_regularizer(scale=lamb))
+
+            ycross = x # A tensor in shape of (batch, dim)
+            for l in range(num_cross_hidden_layers):
+                wl = tf.expand_dims(input=Wc[l], axis=1) # A tensor in shape of (dim, 1)
+                bl = bc[l] # A tensor in shape of (dim)
+                xwl = tf.matmul(a=ycross, b=wl) # A tensor in shape of (batch, 1)
+                ycross = tf.multiply(x=x, y=xwl) + ycross + bl
+
+
+        with tf.name_scope(name="combine-output"):
+            y = tf.concat(values=[ycross, ydeep], axis=-1)
+            logits = tf.layers.dense(inputs=y,
+                                     units=output_size,
+                                     activation=None,
+                                     use_bias=use_global_bias,
+                                     kernel_initializer=xavier_initializer(uniform=True, seed=seed, dtype=dtype),
+                                     bias_initializer=tf.zeros_initializer(dtype=dtype),
+                                     kernel_regularizer=l2_regularizer(scale=lamb),
+                                     bias_regularizer=None,
+                                     name="output") # A tensor in shape of (batch, output_size)
+            if task == "binary":
+                logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (batch)
+
+
+    return logits
+
+
 
 
 if __name__ == '__main__':
@@ -134,15 +175,17 @@ if __name__ == '__main__':
     features, labels = input_fn(filenames=["data.txt"],
                                 delimiter=" ",
                                 field_size_numerical=field_size_numerical,
-                                batch_size=2,
-                                epochs=10,
+                                batch_size=32,
+                                epochs=1,
                                 shuffle=False)
     hparams = {
         "task": "binary",
+        "output_size": 2,
         "field_size_numerical": field_size_numerical,
-        "field_size_categorical": 5,
+        "field_size_categorical": 6,
         "feat_size_categorical": 300,
         "embed_size": 16,
+        "num_cross_hidden_layers": 5,
         "deep_hidden_sizes": [64, 64, 32, 32],
         "dropouts": None,
         "use_global_bias": True,

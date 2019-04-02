@@ -691,7 +691,7 @@ def model_fn(features, labels, mode, params):
                                      bias_regularizer=tfc.layers.l2_regularizer(scale=lamb), # *manual optional*
                                      name="mlp-dense-output") # A tensor in shape of (None, output_size)
             if task == "binary":
-                logits = tf.squeeze(input=logits) # A tensor in shape of (None)
+                logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
                 predictions = {
                     NAME_PROBABILITY_OUTPUT: tf.nn.sigmoid(x=logits),
                     NAME_CLASSIFICATION_OUTPUT: tf.cast(x=tf.round(x=tf.nn.sigmoid(x=logits)), dtype=tf.uint8)
@@ -702,7 +702,7 @@ def model_fn(features, labels, mode, params):
                     NAME_CLASSIFICATION_OUTPUT: tf.cast(x=tf.round(x=tf.nn.softmax(logits=logits, axis=-1)), dtype=tf.uint8)
                 }
             elif task == "regression":
-                logits = tf.squeeze(input=logits) # A tensor in shape of (None)
+                logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
                 predictions = {
                     NAME_REGRESSION_OUTPUT: logits
                 }
