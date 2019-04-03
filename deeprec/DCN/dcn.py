@@ -31,7 +31,7 @@ def input_fn(filenames,
     :param delimiter: str
         A str, separating consecutive columns in data files.
     :param field_size_numerical: int
-
+        
     :param batch_size: int
 
     :param epochs: int
