@@ -10,6 +10,96 @@ description:
 """
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer, l2_regularizer
+import os
+
+FLAGS = tf.flags.FLAGS
+# ----------Hyperparameters of estimator----------
+tf.flags.DEFINE_enum(name="phase",
+                     default=None,
+                     enum_values=["train", "train-with-eval", "eval", "predict", "export"],
+                     help="A string, representing the phase of estimator")
+tf.flags.DEFINE_string(name="model_dir",
+                       default=None,
+                       help="A string, representing the folder path of saved model files")
+tf.flags.DEFINE_string(name="export_dir",
+                       default=None,
+                       help="A string, representing the basic folder path of export .pb files")
+# ----------Hyperparameters of estimator (optional)----------
+tf.flags.DEFINE_integer(name="log_step_count_steps",
+                        default=500,
+                        help="(optional) An integer, representing the frequency, in number of global steps, that the global step/sec will be logged during training",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="save_checkpoints_steps",
+                        default=20000,
+                        help="(optional) An integer, representing save checkpoints every this many steps",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="keep_checkpoint_max",
+                        default=2,
+                        help="(optional) An integer, representing max number of saved model checkpoints",
+                        lower_bound=1,
+                        upper_bound=None)
+# ----------Hyperparameters of input function----------
+tf.flags.DEFINE_string(name="data_dir",
+                       default=None,
+                       help="A string, representing the folder path of dataset")
+tf.flags.DEFINE_string(name="delimiter",
+                       default=None,
+                       help="A string, separating consecutive columns in a line of data file")
+tf.flags.DEFINE_integer(name="field_size_numerical",
+                        default=None,
+                        help="An integer scalar, representing the number of numerical fields of dataset",
+                        lower_bound=0,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="field_size_categorical",
+                        default=None,
+                        help="An integer scalar, representing the number of categorical fields of dataset",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="batch_size",
+                        default=None,
+                        help="An integer, representing the number of consecutive elements of this dataset to combine in a single batch",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="epochs",
+                        default=None,
+                        help="An integer, representing the number of times the dataset should be repeated",
+                        lower_bound=1,
+                        upper_bound=None)
+# ----------Hyperparameters of input function (optional)----------
+tf.flags.DEFINE_boolean(name="shuffle",
+                        default=True,
+                        help="(optional) A boolean, instructing whether to randomly shuffle the samples of training dataset")
+tf.flags.DEFINE_integer(name="buffer_size",
+                        default=100000,
+                        help="(optional) An integer scalar, denoting the number of bytes to buffer",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="num_parallel_calls",
+                        default=4,
+                        help="(optional) An integer scalar, representing the number elements to process in parallel",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_boolean(name="use_dtype_high_precision",
+                        default=False,
+                        help="(optional) A boolean, instructing the dtype of both input function and model function. If False, use tf.float32; if True, use tf.float64")
+tf.flags.DEFINE_string(name="name_feat_vals_numerical",
+                       default="inds",
+                       help="(optional) A string, representing the name of numerical feature values in return dict")
+tf.flags.DEFINE_string(name="name_feat_inds_categorical",
+                       default="vals",
+                       help="(optional) A string, representing the name of categorical feature indices in return dict")
+# ----------Hyperparameters of model function----------
+tf.flags.DEFINE_string(name="task",
+                       default=None,
+                       help="A string, representing the type of task (binary, multi or regression)")
+tf.flags.DEFINE_integer(name="output_size",
+                        default=None,
+                        help="An integer scalar, representing the number of output units",
+                        lower_bound=1,
+                        upper_bound=None)
+
 
 def input_fn(filenames,
              delimiter,
