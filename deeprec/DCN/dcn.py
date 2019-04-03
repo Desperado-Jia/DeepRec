@@ -22,6 +22,28 @@ def input_fn(filenames,
              dtype=tf.float32,
              name_feat_vals_numerical="vals_numerical",
              name_feat_inds_categorical="inds_categorical"):
+    """
+
+    Parameters
+    ----------
+    :param filenames: list
+        A list of string, containing one or more paths of filenames.
+    :param delimiter: str
+        A str, separating consecutive columns in data files.
+    :param field_size_numerical: int
+
+    :param batch_size: int
+
+    :param epochs: int
+
+    :param shuffle: bool
+    :param buffer_size: int
+    :param num_parallel_calls: int
+    :param dtype:
+    :param name_feat_vals_numerical:
+    :param name_feat_inds_categorical:
+    :return:
+    """
     def map_func(line):
         columns = tf.string_split(source=[line], delimiter=delimiter, skip_empty=False).values
         # ----------Process label----------
@@ -313,7 +335,7 @@ def model_fn(features, labels, mode, params):
 
 
 def main(unused_argv):
-
+    pass
 
 
 if __name__ == '__main__':
