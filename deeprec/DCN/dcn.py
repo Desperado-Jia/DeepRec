@@ -163,6 +163,14 @@ def model_fn(features, labels, mode, params):
             if task == "binary":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (batch)
 
+            elif task == "regression":
+                pass
+
+            elif task == "multi":
+                pass
+
+            else:
+                raise ValueError()
 
     return logits
 

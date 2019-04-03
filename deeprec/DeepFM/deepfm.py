@@ -299,12 +299,12 @@ def model_fn(features, labels, mode, params):
     if seed != None:
         tf.set_random_seed(seed=seed)
 
-    NAME_PROBABILITY_OUTPUT = "prob"
-    NAME_CLASSIFICATION_OUTPUT = "class"
-    NAME_REGRESSION_OUTPUT = "pred"
+    name_probability_output = "prob"
+    name_classification_output = "class"
+    name_regression_output = "pred"
 
-    VALUE_ERROR_WARNING_TASK = "Argument of model function <task>: \"{}\" is invalid. It must be in [\"binary\", \"regression\"]".format(task)
-    VALUE_ERROR_WARNING_OPTIMIZER = "Argument value of <optimizer>: {} is not supported.".format(optimizer)
+    value_error_warning_task = "Argument of model function <task>: \"{}\" is invalid. It must be in [\"binary\", \"regression\"]".format(task)
+    value_error_warning_optimizer = "Argument value of <optimizer>: {} is not supported.".format(optimizer)
 
     # ----------Hyperparameters for exponential decay(*manual optional*)----------
     DECAY_STEPS = 5000
@@ -423,15 +423,15 @@ def model_fn(features, labels, mode, params):
 
             if task == "binary":
                 predictions = {
-                    NAME_PROBABILITY_OUTPUT: tf.sigmoid(x=logits),
-                    NAME_CLASSIFICATION_OUTPUT: tf.cast(x=tf.round(x=tf.sigmoid(x=logits)), dtype=tf.uint8)
+                    name_probability_output: tf.sigmoid(x=logits),
+                    name_classification_output: tf.cast(x=tf.round(x=tf.sigmoid(x=logits)), dtype=tf.uint8)
                 }
             elif task == "regression":
                 predictions = {
-                    NAME_REGRESSION_OUTPUT: logits
+                    name_regression_output: logits
                 }
             else:
-                raise ValueError(VALUE_ERROR_WARNING_TASK)
+                raise ValueError(value_error_warning_task)
 
     # ----------Provide an estimator spec for `ModeKeys.PREDICTION` mode----------
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -450,7 +450,7 @@ def model_fn(features, labels, mode, params):
                               axis=0,
                               keepdims=False) # A scalar, representing the training loss of current batch training dataset
     else:
-        raise ValueError(VALUE_ERROR_WARNING_TASK)
+        raise ValueError(value_error_warning_task)
 
     reg = tf.reduce_sum(input_tensor=tf.get_collection(key=tf.GraphKeys.REGULARIZATION_LOSSES),
                         axis=0,
@@ -462,17 +462,17 @@ def model_fn(features, labels, mode, params):
     if mode == tf.estimator.ModeKeys.EVAL:
         if task == "binary":
             eval_metric_ops = {
-                "accuracy": tf.metrics.accuracy(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
-                "precision": tf.metrics.precision(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
-                "recall": tf.metrics.recall(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
-                "auc": tf.metrics.auc(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT])
+                "accuracy": tf.metrics.accuracy(labels=labels, predictions=predictions[name_classification_output]),
+                "precision": tf.metrics.precision(labels=labels, predictions=predictions[name_classification_output]),
+                "recall": tf.metrics.recall(labels=labels, predictions=predictions[name_classification_output]),
+                "auc": tf.metrics.auc(labels=labels, predictions=predictions[name_classification_output])
             }
         elif task == "regression":
             eval_metric_ops = {
-                "rmse": tf.metrics.root_mean_squared_error(labels=labels, predictions=predictions[NAME_REGRESSION_OUTPUT])
+                "rmse": tf.metrics.root_mean_squared_error(labels=labels, predictions=predictions[name_regression_output])
             }
         else:
-            raise ValueError(VALUE_ERROR_WARNING_TASK)
+            raise ValueError(value_error_warning_task)
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, predictions=predictions, eval_metric_ops=eval_metric_ops)
 
     # ----------Build optimizer----------
@@ -526,7 +526,7 @@ def model_fn(features, labels, mode, params):
                                         beta1=0.9,
                                         beta2=0.999)
     else:
-        raise NotImplementedError(VALUE_ERROR_WARNING_OPTIMIZER)
+        raise NotImplementedError(value_error_warning_optimizer)
 
     train_op = opt_op.minimize(loss=loss, global_step=global_step, name="train_op")
 

@@ -553,30 +553,28 @@ def model_fn(features, labels, mode, params):
     name_feat_inds_behaviors = params["name_feat_inds_behaviors"]
     reuse = params["reuse"]
     seed = params["seed"]
+    # -----Hyperparameters for exponential decay(*manual optional*)-----
+    decay_steps = 5000
+    decay_rate = 0.998
+    staircase = True
+    # -----Hyperparameters for information showing-----
+    name_probability_output = "prob"
+    name_classification_output = "class"
+    name_regression_output = "pred"
+    value_error_warning_task = "Argument of model function <task>: \"{}\" is not supported. It must be in " \
+                               "[\"binary\", \"multi\", \"regression\"]".format(task)
+    value_error_warning_optimizer = "Argument value of <optimizer>: {} is not supported.".format(optimizer)
+    value_error_warning_output_size_and_task = "Argument of model function <output_size>: {}, must be 1 when <task> " \
+                                               "is: \"{}\"".format(output_size, task)
 
     if seed != None:
         tf.set_random_seed(seed=seed)
 
-    NAME_PROBABILITY_OUTPUT = "prob"
-    NAME_CLASSIFICATION_OUTPUT = "class"
-    NAME_REGRESSION_OUTPUT = "pred"
-
-    VALUE_ERROR_WARNING_TASK = "Argument of model function <task>: \"{}\" is not supported. It must be in " \
-                               "[\"binary\", \"multi\", \"regression\"]".format(task)
-    VALUE_ERROR_WARNING_OUTPUT_SIZE_AND_TASK = "Argument of model function <output_size>: {}, must be 1 when <task> is: \"{}\"".format(output_size, task)
-    VALUE_ERROR_WARNING_OPTIMIZER = "Argument value of <opt>: {} is not supported.".format(optimizer)
-
-    # ----------Hyperparameters for exponential decay(*manual optional*)----------
-    DECAY_STEPS = 5000
-    DECAY_RATE = 0.998
-    STAIRCASE = True
-
-
-# ----------Assert for hyperparameters----------
+    # ----------Assert for hyperparameters----------
     if task == "binary":
-        assert (output_size == 1), VALUE_ERROR_WARNING_OUTPUT_SIZE_AND_TASK
+        assert (output_size == 1), value_error_warning_output_size_and_task
     if task == "regression":
-        assert (output_size == 1), VALUE_ERROR_WARNING_OUTPUT_SIZE_AND_TASK
+        assert (output_size == 1), value_error_warning_output_size_and_task
 
     # ----------Build model inference----------
     with tf.variable_scope(name_or_scope="inference", reuse=reuse):
@@ -693,21 +691,21 @@ def model_fn(features, labels, mode, params):
             if task == "binary":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
                 predictions = {
-                    NAME_PROBABILITY_OUTPUT: tf.nn.sigmoid(x=logits),
-                    NAME_CLASSIFICATION_OUTPUT: tf.cast(x=tf.round(x=tf.nn.sigmoid(x=logits)), dtype=tf.uint8)
+                    name_probability_output: tf.nn.sigmoid(x=logits),
+                    name_classification_output: tf.cast(x=tf.round(x=tf.nn.sigmoid(x=logits)), dtype=tf.uint8)
                 }
             elif task == "multi":
                 predictions = {
-                    NAME_PROBABILITY_OUTPUT: tf.nn.softmax(logits=logits, axis=-1),
-                    NAME_CLASSIFICATION_OUTPUT: tf.cast(x=tf.round(x=tf.nn.softmax(logits=logits, axis=-1)), dtype=tf.uint8)
+                    name_probability_output: tf.nn.softmax(logits=logits, axis=-1),
+                    name_classification_output: tf.argmax(input=logits, axis=-1, output_type=tf.uint8)
                 }
             elif task == "regression":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
                 predictions = {
-                    NAME_REGRESSION_OUTPUT: logits
+                    name_regression_output: logits
                 }
             else:
-                raise ValueError(VALUE_ERROR_WARNING_TASK)
+                raise ValueError(value_error_warning_task)
 
     # ----------Provide an estimator spec for `ModeKeys.PREDICTION` mode----------
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -734,7 +732,7 @@ def model_fn(features, labels, mode, params):
                               axis=0,
                               keepdims=False) # A scalar, representing the training loss of current batch training dataset
     else:
-        raise ValueError(VALUE_ERROR_WARNING_TASK)
+        raise ValueError(value_error_warning_task)
 
     reg = tf.reduce_sum(input_tensor=tf.get_collection(key=tf.GraphKeys.REGULARIZATION_LOSSES),
                         axis=0,
@@ -746,21 +744,21 @@ def model_fn(features, labels, mode, params):
     if mode == tf.estimator.ModeKeys.EVAL:
         if task == "binary":
             eval_metric_ops = {
-                "accuracy": tf.metrics.accuracy(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
-                "precision": tf.metrics.precision(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
-                "recall": tf.metrics.recall(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]),
-                "auc": tf.metrics.auc(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT])
+                "accuracy": tf.metrics.accuracy(labels=labels, predictions=predictions[name_classification_output]),
+                "precision": tf.metrics.precision(labels=labels, predictions=predictions[name_classification_output]),
+                "recall": tf.metrics.recall(labels=labels, predictions=predictions[name_classification_output]),
+                "auc": tf.metrics.auc(labels=labels, predictions=predictions[name_classification_output])
             }
         elif task == "multi":
             eval_metric_ops = {
-                "recall": tf.metrics.recall(labels=labels, predictions=predictions[NAME_CLASSIFICATION_OUTPUT]) # ???
+                "recall": tf.metrics.recall(labels=labels, predictions=predictions[name_classification_output]) # ???
             }
         elif task == "regression":
             eval_metric_ops = {
-                "rmse": tf.metrics.root_mean_squared_error(labels=labels, predictions=predictions[NAME_REGRESSION_OUTPUT])
+                "rmse": tf.metrics.root_mean_squared_error(labels=labels, predictions=predictions[name_regression_output])
             }
         else:
-            raise ValueError(VALUE_ERROR_WARNING_TASK)
+            raise ValueError(value_error_warning_task)
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, predictions=predictions, eval_metric_ops=eval_metric_ops)
 
     # ----------Build optimizer----------
@@ -770,9 +768,9 @@ def model_fn(features, labels, mode, params):
     elif optimizer == "sgd-with-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
-                                                         decay_steps=DECAY_STEPS,
-                                                         decay_rate=DECAY_RATE,
-                                                         staircase=STAIRCASE)
+                                                         decay_steps=decay_steps,
+                                                         decay_rate=decay_rate,
+                                                         staircase=staircase)
         opt_op = tf.train.GradientDescentOptimizer(learning_rate=decay_learning_rate)
     elif optimizer == "momentum":
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
@@ -781,9 +779,9 @@ def model_fn(features, labels, mode, params):
     elif optimizer == "momentum-with-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
-                                                         decay_steps=DECAY_STEPS,
-                                                         decay_rate=DECAY_RATE,
-                                                         staircase=STAIRCASE)
+                                                         decay_steps=decay_steps,
+                                                         decay_rate=decay_rate,
+                                                         staircase=staircase)
         opt_op = tf.train.MomentumOptimizer(learning_rate=decay_learning_rate,
                                             momentum=0.9,
                                             use_nesterov=False)
@@ -794,9 +792,9 @@ def model_fn(features, labels, mode, params):
     elif optimizer == "nesterov-with-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
-                                                         decay_steps=DECAY_STEPS,
-                                                         decay_rate=DECAY_RATE,
-                                                         staircase=STAIRCASE)
+                                                         decay_steps=decay_steps,
+                                                         decay_rate=decay_rate,
+                                                         staircase=staircase)
         opt_op = tf.train.MomentumOptimizer(learning_rate=decay_learning_rate,
                                             momentum=0.9,
                                             use_nesterov=True)
@@ -814,7 +812,7 @@ def model_fn(features, labels, mode, params):
                                         beta1=0.9,
                                         beta2=0.999)
     else:
-        raise NotImplementedError(VALUE_ERROR_WARNING_OPTIMIZER)
+        raise NotImplementedError(value_error_warning_optimizer)
 
     train_op = opt_op.minimize(loss=loss, global_step=global_step, name="train_op")
 
@@ -921,6 +919,7 @@ def main(unused_argv):
         "reuse": REUSE,
         "seed": SEED
     }
+
     # -------Multi-GPU Usage-------
     # mirrored_strategy = tfc.distribute.MirroredStrategy(devices=["/gpu:0", "/gpu:1"])
     # config = tf.estimator.RunConfig(
