@@ -2,7 +2,7 @@
 
 DeepRec is an easy-to-use, end-to-end and scalable toolkit of deep-learning and reinforcement learning based recommender system models (e.g. Click Through Rate) which can be used for building your own custom recommender system efficiently and easily.
 
-Note: This package is based on **TensorFlow(1.12.0)**, using tensorflow high level API Dataset and Estimator for constructing input function and model function, and using tensorflow-serving for serving the model.
+Note: This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow high level API Dataset and Estimator for constructing input function and model function, tensorflow-serving for serving the model.
 
 
 ## Architecture
