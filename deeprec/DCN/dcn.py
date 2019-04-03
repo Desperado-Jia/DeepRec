@@ -14,6 +14,7 @@ from tensorflow.contrib.layers import xavier_initializer, l2_regularizer
 def input_fn(filenames,
              delimiter,
              field_size_numerical,
+             field_size_categorical,
              batch_size,
              epochs,
              shuffle=True,
@@ -23,6 +24,32 @@ def input_fn(filenames,
              name_feat_vals_numerical="vals_numerical",
              name_feat_inds_categorical="inds_categorical"):
     """
+    The input function for loading sparse dataset in Deep & Cross format. The columns are separeted by argument
+    delimiter(e.g. " ").
+    Note:
+        1. From left to right in each line, there contains three parts in order:
+        label => numerical fields => categorical fields
+            <label>
+            <value 1 numerical> ... <value j_n numerical>
+            <index 1 categorical> ... <index j_c categorical>
+        2. Categorical fields group maintains an index-system independently.
+        3. The feature type of each fields group:
+            numerical fields(fixed length >= 0): dense fields
+            categorical fields(fixed length > 1): each must be one-hot active field.
+        4. The order of numerical fields must be fixed, and the order of categorical fields must be fixed too.
+        5. The input function can be used for binary classification, multi classification and regression task:
+            binary classification: <label> in {0, 1};
+            multi classification: <label> in {0, K} (K is the number of total classes);
+            regression: <label> in (-inf, inf).
+    e.g.
+        (field_size_numerical = 2, field_size_categorical = 6, feat_size_categorical = 300)
+        0 0.172351 0.413592 1 14 20 134 231 293
+        1 0.314512 0.871236 4 17 78 104 280 298
+        For the first sample:
+        0:                      label
+        0.172351                value of 1-th numerical field
+        0.413592                value of 2-th numerical field
+        1 14 20 134 231 293     indices of categorical fields
 
     Parameters
     ----------
@@ -31,18 +58,36 @@ def input_fn(filenames,
     :param delimiter: str
         A str, separating consecutive columns in data files.
     :param field_size_numerical: int
-
+        An integer scalar, representing the number of numerical fields(namely the number of numerical features) of dataset.
+    :param field_size_categorical: int
+        An integer scalar, representing the number of categorical fields(number of categorical columns before one-hot encoding) of dataset.
     :param batch_size: int
-
+        An integer scalar, representing the number of consecutive elements of this dataset to combine in a single batch.
     :param epochs: int
+        An integer scalar, representing the number of times the dataset should be repeated.
+    :param shuffle: bool, optional
+        A boolean(defaults to True), instructing whether to randomly shuffle the elements of this dataset.
+    :param buffer_size: int, optional
+        An integer scalar(defaults to 100000), denoting the number of bytes to buffer.
+    :param num_parallel_calls: int, optional
+        An integer scalar(defaults to 4), representing the number elements to process in parallel.
+    :param dtype: tf.Dtype, optional
+        A tf.DType(defaults to tf.float32), representing the numeric type of values. it always takes value from [tf.float32, tf.float64].
+    :param name_feat_vals_numerical: str, optional
+        A string, representing the name of numerical feature values in return dict.
+    :param name_feat_inds_categorical: str, optional
+        A string, representing the name of categorical feature indices in return dict.
 
-    :param shuffle: bool
-    :param buffer_size: int
-    :param num_parallel_calls: int
-    :param dtype:
-    :param name_feat_vals_numerical:
-    :param name_feat_inds_categorical:
-    :return:
+    Returns
+    -------
+    :return: dict
+        A dict of two Tensors, representing features(including feature indices and feature values) in a single batch.
+        {
+            <name_feat_vals_numerical>: tf.Tensor of numerical feature values in shape of (None, field_size_numerical),
+            <name_feat_inds_categorical>: tf.Tensor of categorical feature indices in shape of (None, field_size_categorical)
+        }
+    :return: Tensor
+        A Tensor in shape of (None), representing labels in a single batch.
     """
     def map_func(line):
         columns = tf.string_split(source=[line], delimiter=delimiter, skip_empty=False).values
@@ -52,7 +97,7 @@ def input_fn(filenames,
         vals_numerical = tf.string_to_number(string_tensor=columns[1: 1 + field_size_numerical],
                                              out_type=dtype) # A tensor in shape of (field_size_numerical)
         # ----------Process categorical fields----------
-        inds_categorical = tf.string_to_number(string_tensor=columns[1 + field_size_numerical: ],
+        inds_categorical = tf.string_to_number(string_tensor=columns[-field_size_categorical: ],
                                                out_type=tf.int32) # A tensor in shape of (field_size_categorical)
         feats = {
             name_feat_vals_numerical: vals_numerical,
@@ -74,6 +119,78 @@ def input_fn(filenames,
 
 
 def model_fn(features, labels, mode, params):
+    """Model function of Deep & Cross network(DCN) for predictive analytics of high dimensional sparse data.
+
+    Args of dict params:
+        task: str
+            A string, representing the type of task.
+            Note:
+                it must take value from ["binary", "multi", "regression"];
+                it instruct the type of loss function:
+                    "binary": sigmoid cross-entropy;
+                    "multi": softmax cross-entropy;
+                    "regression": mean squared error.
+        output_size: int
+            An integer scalar, representing the number of output units.
+            Note:
+                it must be correspond to <task>:
+                    task == "binary": output_size must be equal to 1;
+                    task =="multi": output_size must be equal to the dimension of class distribution;
+                    task == "regression": output_size must be equal to 1.
+        field_size_numerical: int
+            An integer scalar, representing the number of numerical fields(also is the number of numerical features) of dataset.
+            Note:
+                it must be consistent with <field_size_numerical> of input function.
+        field_size_categorical: int
+            An integer scalar, representing the number of categorical fields(number of categorical columns before one-hot encoding) of dataset.
+            Note:
+                it must be consistent with <field_size_categorical> of input function.
+        feat_size_categorical: int
+            An integer scalar, representing the number of categorical features(number of categorical columns after one-hot encoding) of dataset.
+        embed_size: int
+            An integer scalar, representing the dimension of embedding vectors for all categorical features.
+        num_cross_hidden_layers: int
+            An integer scalar, representing the number of hidden layers belongs to cross part.
+        deep_hidden_sizes: list
+            A list, containing the number of hidden units of each hidden layer in dnn part.
+            Note:
+                it doesn't contain output layer of dnn part.
+        dropouts: list or None
+            If list, containing the dropout rate of each hidden layer in dnn part;
+            If None, don't use dropout operation for any hidden layer.
+            Note:
+                if list, the length of <dropouts> must be equal to <hidden_sizes>.
+        use_global_bias: bool
+            A boolean, instructing whether to use global bias in output part of model inference.
+        use_deep_hidden_bias: bool
+            A boolean, instructing whether to use bias of hidden layer units in deep part of model inference.
+        use_bn: bool
+            A boolean, instructing whether to use batch normalization for each hidden layer in deep part.
+        lamb: float
+            A float scalar, representing the coefficient of regularization term (the larger the value of lamb, the stronger the penalty is).
+        optimizer: str
+            A string, representing the type of optimizer.
+        learning_rate: float
+            A float scalar, representing the learning rate of optimizer.
+        dtype: tf.Dtype
+            A tf.DType, representing the numeric type of values.
+            Note:
+                it must take value from [tf.float32, tf.float64];
+                it must be consistent with <dtype> of input function.
+        name_feat_vals_numerical: str, optional
+            A string, representing the name of numerical feature values in return dict.
+            Note:
+                it must be consistent with <name_feat_vals_numerical> of input function.
+        name_feat_inds_categorical: str, optional
+            A string, representing the name of categorical feature indices in return dict.
+            Note:
+                it must be consistent with <name_feat_inds_categorical> of input function.
+        reuse: bool
+            A boolean, which takes value from [False, True, tf.AUTO_REUSE].
+        seed: int or None
+            If integer scalar, representing the random seed of tensorflow;
+            If None, random choice.
+    """
     # ----------Declare all hyperparameters from params----------
     task = params["task"]
     output_size = params["output_size"]
@@ -90,9 +207,9 @@ def model_fn(features, labels, mode, params):
     lamb = params["lamb"]
     optimizer = params["optimizer"]
     learning_rate = params["learning_rate"]
+    dtype = params["dtype"]
     name_feat_vals_numerical = params["name_feat_vals_numerical"]
     name_feat_inds_categorical = params["name_feat_inds_categorical"]
-    dtype = params["dtype"]
     reuse = params["reuse"]
     seed = params["seed"]
     # -----Hyperparameters for exponential decay(*manual optional*)-----
