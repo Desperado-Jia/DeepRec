@@ -236,7 +236,7 @@ def input_fn(filenames,
             <index 1 context>:<value 1 context> ... <index j_c context>:<value j_c context>
             <index candidate>
             <index 1 behaviors> ... <index j_bmax behaviors>
-        2. Each fields group maintains a index system independently, namely:
+        2. Each fields group maintains an index-system independently, namely:
             a. There exist index 1 in both user fields group and item fields group
             b. The meaning of the first-index value in user fields group is different from the first-index value in item fields group
         3. The feature type of each fields group:
