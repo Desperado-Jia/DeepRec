@@ -567,14 +567,14 @@ def model_fn(features, labels, mode, params):
     value_error_warning_output_size_and_task = "Argument of model function <output_size>: {}, must be 1 when <task> " \
                                                "is: \"{}\"".format(output_size, task)
 
-    if seed != None:
-        tf.set_random_seed(seed=seed)
-
     # ----------Assert for hyperparameters----------
     if task == "binary":
         assert (output_size == 1), value_error_warning_output_size_and_task
     if task == "regression":
         assert (output_size == 1), value_error_warning_output_size_and_task
+
+    if seed != None:
+        tf.set_random_seed(seed=seed)
 
     # ----------Build model inference----------
     with tf.variable_scope(name_or_scope="inference", reuse=reuse):
@@ -697,7 +697,7 @@ def model_fn(features, labels, mode, params):
             elif task == "multi":
                 predictions = {
                     name_probability_output: tf.nn.softmax(logits=logits, axis=-1),
-                    name_classification_output: tf.argmax(input=logits, axis=-1, output_type=tf.uint8)
+                    name_classification_output: tf.argmax(input=logits, axis=-1, output_type=tf.int32)
                 }
             elif task == "regression":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
