@@ -621,9 +621,9 @@ def main(unused_argv):
     num_cross_hidden_layers = FLAGS.num_cross_hidden_layers
     deep_hidden_sizes = FLAGS.deep_hidden_sizes
     dropouts = FLAGS.dropouts
-    use_global_bias = FLAGS.use_global_bias
-    use_deep_hidden_bias = FLAGS.use_deep_hidden_bias
-    use_bn = FLAGS.use_bn
+    use_global_bias = FLAGS.use_global_bias # (optional)
+    use_deep_hidden_bias = FLAGS.use_deep_hidden_bias # (optional)
+    use_bn = FLAGS.use_bn # (optional)
     lamb = FLAGS.lamb
     optimizer = FLAGS.optimizer
     learning_rate = FLAGS.learning_rate
