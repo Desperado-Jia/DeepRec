@@ -16,7 +16,7 @@ FLAGS = tf.flags.FLAGS
 # ----------Hyperparameters of estimator----------
 tf.flags.DEFINE_enum(name="phase",
                      default=None,
-                     enum_values=["train", "train-with-eval", "eval", "predict", "export"],
+                     enum_values=["train", "eval", "predict", "export"],
                      help="A string, representing the phase of estimator")
 tf.flags.DEFINE_string(name="model_dir",
                        default=None,
@@ -25,6 +25,9 @@ tf.flags.DEFINE_string(name="export_dir",
                        default=None,
                        help="A string, representing the basic folder path of export .pb files")
 # ----------Hyperparameters of estimator (optional)----------
+tf.flags.DEFINE_boolean(name="perform_valid_during_train",
+                        default=True,
+                        help="(optional) A boolean, instructing whether to perform validation on valid dataset during train phase")
 tf.flags.DEFINE_integer(name="log_step_count_steps",
                         default=500,
                         help="(optional) An integer, representing the frequency, in number of global steps, that the global step/sec will be logged during training",
@@ -101,7 +104,8 @@ tf.flags.DEFINE_list(name="hidden_sizes",
                      help="A list, containing the number of hidden units of each hidden layer in dnn part")
 tf.flags.DEFINE_list(name="dropouts",
                      default=None,
-                     help="A list, containing the dropout rate of each hidden layer in dnn part (e.g. 128,64,64,32); if None, don't use dropout operation for any hidden layer")
+                     help="A list or None, containing the dropout rate of each hidden layer in dnn part "
+                          "(e.g. 0.4,0.3,0.2,0.1); if None, don't use dropout operation for any hidden layer")
 # ----------Hyperparameters of model function (optional)----------
 tf.flags.DEFINE_boolean(name="use_global_bias",
                         default=True,
@@ -536,8 +540,9 @@ def model_fn(features, labels, mode, params):
 
 
 def main(unused_argv):
-    # ----------Declare all hyperparameters----------
+    # ----------Declare all hyperparameters of terminal interface----------
     phase = FLAGS.phase
+    perform_valid_during_train = FLAGS.perform_valid_during_train # (optional) Note: if use validation dataset during train phase, the valid set and train set are in same data_dir
     log_step_count_steps = FLAGS.log_step_count_steps # (optional)
     save_checkpoints_steps = FLAGS.save_checkpoints_steps # (optional)
     keep_checkpoint_max = FLAGS.keep_checkpoint_max # (optional)
@@ -610,97 +615,78 @@ def main(unused_argv):
     estimator = tf.estimator.Estimator(model_fn=model_fn, model_dir=model_dir, params=hparams, config=config)
     if phase == "train":
         filenames_train = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_TRAIN_FILE + "*"))
-        estimator.train(
-            input_fn=lambda : input_fn(
-                filenames=filenames_train,
-                delimiter=delimiter,
-                separator=separator,
-                batch_size=batch_size,
-                epochs=epochs,
-                shuffle=shuffle,
-                buffer_size=buffer_size,
-                num_parallel_calls=num_parallel_calls,
-                dtype=dtype,
-                name_feat_inds=name_feat_inds,
-                name_feat_vals=name_feat_vals
-            ),
-            steps=None,
-            max_steps=None
-        )
-    elif phase == "train-with-eval":
-        filenames_train = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_TRAIN_FILE + "*"))
-        filenames_eval = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_EVAL_FILE + "*"))
-        train_spec = tf.estimator.TrainSpec(
-            input_fn=lambda : input_fn(
-                filenames=filenames_train,
-                delimiter=delimiter,
-                separator=separator,
-                batch_size=batch_size,
-                epochs=epochs,
-                shuffle=shuffle,
-                buffer_size=buffer_size,
-                num_parallel_calls=num_parallel_calls,
-                dtype=dtype,
-                name_feat_inds=name_feat_inds,
-                name_feat_vals=name_feat_vals
-            ),
-            max_steps=None
-        )
-        eval_spec = tf.estimator.EvalSpec(
-            input_fn=lambda : input_fn(
-                filenames=filenames_eval,
-                delimiter=delimiter,
-                separator=separator,
-                batch_size=batch_size,
-                epochs=1,
-                shuffle=False,
-                buffer_size=buffer_size,
-                num_parallel_calls=num_parallel_calls,
-                dtype=dtype,
-                name_feat_inds=name_feat_inds,
-                name_feat_vals=name_feat_vals
-            ),
-            steps=None,
-            start_delay_secs=120,
-            throttle_secs=600
-        )
-        tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
+        if perform_valid_during_train == True:
+            filenames_valid = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_EVAL_FILE + "*"))
+            train_spec = tf.estimator.TrainSpec(input_fn=lambda : input_fn(filenames=filenames_train,
+                                                                           delimiter=delimiter,
+                                                                           separator=separator,
+                                                                           batch_size=batch_size,
+                                                                           epochs=epochs,
+                                                                           shuffle=shuffle,
+                                                                           buffer_size=buffer_size,
+                                                                           num_parallel_calls=num_parallel_calls,
+                                                                           dtype=dtype,
+                                                                           name_feat_inds=name_feat_inds,
+                                                                           name_feat_vals=name_feat_vals),
+                                                max_steps=None)
+            eval_spec = tf.estimator.EvalSpec(input_fn=lambda : input_fn(filenames=filenames_valid,
+                                                                        delimiter=delimiter,
+                                                                        separator=separator,
+                                                                        batch_size=batch_size,
+                                                                        epochs=1,
+                                                                        shuffle=False,
+                                                                        buffer_size=buffer_size,
+                                                                        num_parallel_calls=num_parallel_calls,
+                                                                        dtype=dtype,
+                                                                        name_feat_inds=name_feat_inds,
+                                                                        name_feat_vals=name_feat_vals),
+                                              steps=None,
+                                              start_delay_secs=120,
+                                              throttle_secs=600)
+            tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
+        else:
+            estimator.train(input_fn=lambda : input_fn(filenames=filenames_train,
+                                                       delimiter=delimiter,
+                                                       separator=separator,
+                                                       batch_size=batch_size,
+                                                       epochs=epochs,
+                                                       shuffle=shuffle,
+                                                       buffer_size=buffer_size,
+                                                       num_parallel_calls=num_parallel_calls,
+                                                       dtype=dtype,
+                                                       name_feat_inds=name_feat_inds,
+                                                       name_feat_vals=name_feat_vals),
+                            steps=None,
+                            max_steps=None)
     elif phase == "eval":
         filenames_eval = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_EVAL_FILE + "*"))
-        estimator.evaluate(
-            input_fn=lambda : input_fn(
-                filenames=filenames_eval,
-                delimiter=delimiter,
-                separator=separator,
-                batch_size=batch_size,
-                epochs=1,
-                shuffle=False,
-                buffer_size=buffer_size,
-                num_parallel_calls=num_parallel_calls,
-                dtype=dtype,
-                name_feat_inds=name_feat_inds,
-                name_feat_vals=name_feat_vals
-            )
-        )
+        estimator.evaluate(input_fn=lambda : input_fn(filenames=filenames_eval,
+                                                      delimiter=delimiter,
+                                                      separator=separator,
+                                                      batch_size=batch_size,
+                                                      epochs=1,
+                                                      shuffle=False,
+                                                      buffer_size=buffer_size,
+                                                      num_parallel_calls=num_parallel_calls,
+                                                      dtype=dtype,
+                                                      name_feat_inds=name_feat_inds,
+                                                      name_feat_vals=name_feat_vals))
     elif phase == "predict":
         filenames_predict = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_PREDICT_FILE + "*"))
-        P = estimator.predict(
-            input_fn=lambda : input_fn(
-                filenames=filenames_predict,
-                delimiter=delimiter,
-                separator=separator,
-                batch_size=batch_size,
-                epochs=1,
-                shuffle=False,
-                buffer_size=buffer_size,
-                num_parallel_calls=num_parallel_calls,
-                dtype=dtype,
-                name_feat_inds=name_feat_inds,
-                name_feat_vals=name_feat_vals
-            )
-        )
-        for p in P:
-            print(p)
+        p = estimator.predict(input_fn=lambda : input_fn(filenames=filenames_predict,
+                                                         delimiter=delimiter,
+                                                         separator=separator,
+                                                         batch_size=batch_size,
+                                                         epochs=1,
+                                                         shuffle=False,
+                                                         buffer_size=buffer_size,
+                                                         num_parallel_calls=num_parallel_calls,
+                                                         dtype=dtype,
+                                                         name_feat_inds=name_feat_inds,
+                                                         name_feat_vals=name_feat_vals))
+        # -----Usage demo, still need to be accomplished-----
+        for ele in p:
+            print(ele)
     elif phase == "export":
         features = {
             name_feat_inds: tf.placeholder(dtype=tf.int32, shape=[None, field_size], name=name_feat_inds),

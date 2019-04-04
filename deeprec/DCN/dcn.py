@@ -16,7 +16,7 @@ FLAGS = tf.flags.FLAGS
 # ----------Hyperparameters of estimator----------
 tf.flags.DEFINE_enum(name="phase",
                      default=None,
-                     enum_values=["train", "train-with-eval", "eval", "predict", "export"],
+                     enum_values=["train", "eval", "predict", "export"],
                      help="A string, representing the phase of estimator")
 tf.flags.DEFINE_string(name="model_dir",
                        default=None,
@@ -25,6 +25,9 @@ tf.flags.DEFINE_string(name="export_dir",
                        default=None,
                        help="A string, representing the basic folder path of export .pb files")
 # ----------Hyperparameters of estimator (optional)----------
+tf.flags.DEFINE_boolean(name="perform_valid_during_train",
+                        default=True,
+                        help="(optional) A boolean, instructing whether to perform validation on valid dataset during train phase")
 tf.flags.DEFINE_integer(name="log_step_count_steps",
                         default=500,
                         help="(optional) An integer, representing the frequency, in number of global steps, that the global step/sec will be logged during training",
@@ -83,7 +86,8 @@ tf.flags.DEFINE_integer(name="num_parallel_calls",
                         upper_bound=None)
 tf.flags.DEFINE_boolean(name="use_dtype_high_precision",
                         default=False,
-                        help="(optional) A boolean, instructing the dtype of both input function and model function. If False, use tf.float32; if True, use tf.float64")
+                        help="(optional) A boolean, instructing the dtype of both input function and model function. "
+                             "If False, use tf.float32; if True, use tf.float64")
 tf.flags.DEFINE_string(name="name_feat_vals_numerical",
                        default="inds",
                        help="(optional) A string, representing the name of numerical feature values in return dict")
@@ -99,6 +103,51 @@ tf.flags.DEFINE_integer(name="output_size",
                         help="An integer scalar, representing the number of output units",
                         lower_bound=1,
                         upper_bound=None)
+tf.flags.DEFINE_integer(name="feat_size_categorical",
+                        default=None,
+                        help="An integer scalar, representing the number of categorical features of dataset",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="embed_size",
+                        default=None,
+                        help="An integer scalar, representing the dimension of embedding vectors for all features",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_integer(name="num_cross_hidden_layers",
+                        default=None,
+                        help="An integer scalar, representing the number of hidden layers belongs to cross part",
+                        lower_bound=1,
+                        upper_bound=None)
+tf.flags.DEFINE_list(name="deep_hidden_sizes",
+                     default=None,
+                     help="A list, containing the number of hidden units of each hidden layer in deep part (e.g. 128,64,32,16)")
+tf.flags.DEFINE_list(name="dropouts",
+                     default=None,
+                     help="A list or None, containing the dropout rate of each hidden layer in dnn part (e.g. 0.4,0.3,0.2,0.1); "
+                          "if None, don't use dropout operation for any hidden layer")
+# ----------Hyperparameters of model function (optional)----------
+tf.flags.DEFINE_boolean(name="use_global_bias",
+                        default=True,
+                        help="(optional) A boolean, instructing whether to use global bias in model inference")
+tf.flags.DEFINE_boolean(name="use_deep_hidden_bias",
+                        default=True,
+                        help="(optional) A boolean, instructing whether to use bias of hidden layer units in deep part of model inference")
+tf.flags.DEFINE_boolean(name="use_bn",
+                        default=True,
+                        help="(optional) A boolean, instructing whether to use batch normalization for each hidden layer in dnn part")
+tf.flags.DEFINE_float(name="lamb",
+                      default=0.001,
+                      help="(optional) A float scalar, representing the coefficient of regularization term",
+                      lower_bound=0.0,
+                      upper_bound=None)
+tf.flags.DEFINE_string(name="optimizer",
+                       default="adam",
+                       help="(optional) A string, representing the type of optimizer")
+tf.flags.DEFINE_float(name="learning_rate",
+                      default=0.003,
+                      help="(optional) A float scalar, representing the learning rate of optimizer",
+                      lower_bound=0.0,
+                      upper_bound=None)
 
 
 def input_fn(filenames,
@@ -242,7 +291,7 @@ def model_fn(features, labels, mode, params):
         num_cross_hidden_layers: int
             An integer scalar, representing the number of hidden layers belongs to cross part.
         deep_hidden_sizes: list
-            A list, containing the number of hidden units of each hidden layer in dnn part.
+            A list, containing the number of hidden units of each hidden layer in deep part.
             Note:
                 it doesn't contain output layer of dnn part.
         dropouts: list or None
@@ -396,7 +445,6 @@ def model_fn(features, labels, mode, params):
                 xwl = tf.matmul(a=ycross, b=wl) # A tensor in shape of (batch, 1)
                 ycross = tf.multiply(x=x, y=xwl) + ycross + bl
 
-
         with tf.name_scope(name="combine-output"):
             y = tf.concat(values=[ycross, ydeep], axis=-1) # A tensor in shape of (batch, concat_size)
             logits = tf.layers.dense(inputs=y,
@@ -542,42 +590,168 @@ def model_fn(features, labels, mode, params):
 
 
 def main(unused_argv):
+    # ----------Declare all hyperparameters of terminal interface----------
+    phase = FLAGS.phase
+    model_dir = FLAGS.model_dir
+    export_dir = FLAGS.export_dir
+    perform_valid_during_train = FLAGS.perform_valid_during_train # (optional) Note: if use validation dataset during train phase, the valid set and train set are in same data_dir
+    log_step_count_steps = FLAGS.log_step_count_steps # (optional)
+    save_checkpoints_steps = FLAGS.save_checkpoints_steps # (optional)
+    keep_checkpoint_max = FLAGS.keep_checkpoint_max # (optional)
+    data_dir = FLAGS.data_dir
+    delimiter = FLAGS.delimiter
+    field_size_numerical = FLAGS.field_size_numerical
+    field_size_categorical = FLAGS.field_size_categorical
+    batch_size = FLAGS.batch_size
+    epochs = FLAGS.epochs
+    shuffle = FLAGS.shuffle # (optional)
+    buffer_size = FLAGS.buffer_size # (optional)
+    num_parallel_calls = FLAGS.num_parallel_calls # (optional)
+    use_dtype_high_precision = FLAGS.use_dtype_high_precision # (optional)
+    name_feat_vals_numerical = FLAGS.name_feat_vals_numerical # (optional)
+    name_feat_inds_categorical = FLAGS.name_feat_inds_categorical # (optional)
+    task = FLAGS.task
+    output_size = FLAGS.output_size
+    feat_size_categorical = FLAGS.feat_size_categorical
+    embed_size = FLAGS.embed_size
+    num_cross_hidden_layers = FLAGS.num_cross_hidden_layers
+    deep_hidden_sizes = FLAGS.deep_hidden_sizes
+    dropouts = FLAGS.dropouts
+    use_global_bias = FLAGS.use_global_bias
+    use_deep_hidden_bias = FLAGS.use_deep_hidden_bias
+    use_bn = FLAGS.use_bn
+    lamb = FLAGS.lamb
+    optimizer = FLAGS.optimizer
+    learning_rate = FLAGS.learning_rate
 
+    PREFIX_TRAIN_FILE = "train"
+    PREFIX_EVAL_FILE = "eval"
+    PREFIX_PREDICT_FILE = "predict"
+    REUSE = False
+    SEED = None
 
+    if use_dtype_high_precision == False:
+        dtype = tf.float32
+    else:
+        dtype = tf.float64
+
+    hparams = {
+        "task": task,
+        "output_size": output_size,
+        "field_size_numerical":  field_size_numerical,
+        "field_size_categorical": field_size_categorical,
+        "feat_size_categorical": feat_size_categorical,
+        "embed_size": embed_size,
+        "num_cross_hidden_layers": num_cross_hidden_layers,
+        "deep_hidden_sizes": deep_hidden_sizes,
+        "dropouts": dropouts,
+        "use_global_bias": use_global_bias,
+        "use_deep_hidden_bias": use_deep_hidden_bias,
+        "use_bn": use_bn,
+        "lamb": lamb,
+        "optimizer": optimizer,
+        "learning_rate": learning_rate,
+        "dtype": dtype,
+        "name_feat_vals_numerical": name_feat_vals_numerical,
+        "name_feat_inds_categorical": name_feat_inds_categorical,
+        "reuse": REUSE,
+        "seed": SEED
+    }
+    config = tf.estimator.RunConfig(
+        log_step_count_steps=log_step_count_steps,
+        save_checkpoints_steps=save_checkpoints_steps,
+        keep_checkpoint_max=keep_checkpoint_max
+    )
+    estimator = tf.estimator.Estimator(model_fn=model_fn, model_dir=model_dir, params=hparams, config=config)
+    if phase == "train":
+        filenames_train = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_TRAIN_FILE + "*"))
+        if perform_valid_during_train == True:
+            filenames_valid = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_EVAL_FILE + "*"))
+            train_spec = tf.estimator.TrainSpec(input_fn=lambda : input_fn(filenames=filenames_train,
+                                                                           delimiter=delimiter,
+                                                                           field_size_numerical=field_size_numerical,
+                                                                           field_size_categorical=field_size_categorical,
+                                                                           batch_size=batch_size,
+                                                                           epochs=epochs,
+                                                                           shuffle=shuffle,
+                                                                           buffer_size=buffer_size,
+                                                                           num_parallel_calls=num_parallel_calls,
+                                                                           dtype=dtype,
+                                                                           name_feat_vals_numerical=name_feat_vals_numerical,
+                                                                           name_feat_inds_categorical=name_feat_inds_categorical),
+                                                max_steps=None)
+            eval_spec = tf.estimator.EvalSpec(input_fn=lambda : input_fn(filenames=filenames_valid,
+                                                                         delimiter=delimiter,
+                                                                         field_size_numerical=field_size_numerical,
+                                                                         field_size_categorical=field_size_categorical,
+                                                                         batch_size=batch_size,
+                                                                         epochs=1,
+                                                                         shuffle=False,
+                                                                         buffer_size=buffer_size,
+                                                                         num_parallel_calls=num_parallel_calls,
+                                                                         dtype=dtype,
+                                                                         name_feat_vals_numerical=name_feat_vals_numerical,
+                                                                         name_feat_inds_categorical=name_feat_inds_categorical),
+                                              steps=None,
+                                              start_delay_secs=120,
+                                              throttle_secs=600)
+            tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)
+        else:
+            estimator.train(input_fn=lambda : input_fn(filenames=filenames_train,
+                                                       delimiter=delimiter,
+                                                       field_size_numerical=field_size_numerical,
+                                                       field_size_categorical=field_size_categorical,
+                                                       batch_size=batch_size,
+                                                       epochs=epochs,
+                                                       shuffle=shuffle,
+                                                       buffer_size=buffer_size,
+                                                       num_parallel_calls=num_parallel_calls,
+                                                       dtype=dtype,
+                                                       name_feat_vals_numerical=name_feat_vals_numerical,
+                                                       name_feat_inds_categorical=name_feat_inds_categorical),
+                            steps=None,
+                            max_steps=None)
+    elif phase == "eval":
+        filenames_eval = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_EVAL_FILE + "*"))
+        estimator.evaluate(input_fn=lambda : input_fn(filenames=filenames_eval,
+                                                      delimiter=delimiter,
+                                                      field_size_numerical=field_size_numerical,
+                                                      field_size_categorical=field_size_categorical,
+                                                      batch_size=batch_size,
+                                                      epochs=1,
+                                                      shuffle=False,
+                                                      buffer_size=buffer_size,
+                                                      num_parallel_calls=num_parallel_calls,
+                                                      dtype=dtype,
+                                                      name_feat_vals_numerical=name_feat_vals_numerical,
+                                                      name_feat_inds_categorical=name_feat_inds_categorical))
+    elif phase == "predict":
+        filenames_predict = tf.gfile.Glob(filename=os.path.join(data_dir, PREFIX_PREDICT_FILE + "*"))
+        p = estimator.predict(input_fn=lambda : input_fn(filenames=filenames_predict,
+                                                         delimiter=delimiter,
+                                                         field_size_numerical=field_size_numerical,
+                                                         field_size_categorical=field_size_categorical,
+                                                         batch_size=batch_size,
+                                                         epochs=1,
+                                                         shuffle=False,
+                                                         buffer_size=buffer_size,
+                                                         num_parallel_calls=num_parallel_calls,
+                                                         dtype=dtype,
+                                                         name_feat_vals_numerical=name_feat_vals_numerical,
+                                                         name_feat_inds_categorical=name_feat_inds_categorical))
+        # -----Usage demo, still need to be accomplished-----
+        for ele in p:
+            print(ele)
+    elif phase == "export":
+        features = {
+            name_feat_vals_numerical: tf.placeholder(dtype=dtype, shape=[None, field_size_numerical], name=name_feat_vals_numerical),
+            name_feat_inds_categorical: tf.placeholder(dtype=tf.int32, shape=[None, field_size_categorical], name=name_feat_inds_categorical)
+        }
+        serving_input_receiver_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(features=features)
+        estimator.export_savedmodel(export_dir_base=export_dir, serving_input_receiver_fn=serving_input_receiver_fn)
+    else:
+        raise NotImplementedError("Argument <phase> value: {} is not supported.".format(phase))
 
 if __name__ == '__main__':
-    field_size_numerical = 2
-
-    features, labels = input_fn(filenames=["data.txt"],
-                                delimiter=" ",
-                                field_size_numerical=field_size_numerical,
-                                batch_size=32,
-                                epochs=1,
-                                shuffle=False)
-    hparams = {
-        "task": "multi",
-        "output_size": 2,
-        "field_size_numerical": field_size_numerical,
-        "field_size_categorical": 6,
-        "feat_size_categorical": 300,
-        "embed_size": 16,
-        "num_cross_hidden_layers": 5,
-        "deep_hidden_sizes": [64, 64, 32, 32],
-        "dropouts": None,
-        "use_global_bias": True,
-        "use_deep_hidden_bias": True,
-        "use_bn": True,
-        "lamb": 0.001,
-        "optimizer": "adam",
-        "learning_rate": 0.0025,
-        "name_feat_vals_numerical": "vals_numerical",
-        "name_feat_inds_categorical": "inds_categorical",
-        "dtype": tf.float32,
-        "reuse": tf.AUTO_REUSE,
-        "seed": 2019
-    }
-    result = model_fn(features=features, labels=labels, mode=tf.estimator.ModeKeys.TRAIN, params=hparams)
-
-    with tf.Session() as sess:
-        sess.run(fetches=tf.global_variables_initializer())
-        r = sess.run(fetches=result)
+    tf.logging.set_verbosity(v=tf.logging.INFO)
+    tf.app.run(main=main)

@@ -2,6 +2,7 @@
 
 python3 deepfm.py \
 --phase "train" \
+--perform_valid_during_train True \
 --model_dir ".//log" \
 --data_dir "..//..//examples//Adventure-Works-Cycles" \
 --delimiter " " \
