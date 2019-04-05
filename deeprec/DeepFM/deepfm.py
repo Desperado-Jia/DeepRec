@@ -299,21 +299,19 @@ def model_fn(features, labels, mode, params):
     name_feat_vals = params["name_feat_vals"]
     reuse = params["reuse"]
     seed = params["seed"]
-
-    if seed != None:
-        tf.set_random_seed(seed=seed)
-
+    # -----Hyperparameters for exponential decay(*manual optional*)-----
+    decay_steps = 5000
+    decay_rate = 0.998
+    staircase = True
+    # -----Hyperparameters for information showing-----
     name_probability_output = "prob"
     name_classification_output = "class"
     name_regression_output = "pred"
-
     value_error_warning_task = "Argument of model function <task>: \"{}\" is invalid. It must be in [\"binary\", \"regression\"]".format(task)
     value_error_warning_optimizer = "Argument value of <optimizer>: {} is not supported.".format(optimizer)
 
-    # ----------Hyperparameters for exponential decay(*manual optional*)----------
-    DECAY_STEPS = 5000
-    DECAY_RATE = 0.998
-    STAIRCASE = True
+    if seed != None:
+        tf.set_random_seed(seed=seed)
 
     # ----------Assert for hyperparameters----------
     assert (task in ["binary", "regression"])
@@ -486,9 +484,9 @@ def model_fn(features, labels, mode, params):
     elif optimizer == "sgd-with-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
-                                                         decay_steps=DECAY_STEPS,
-                                                         decay_rate=DECAY_RATE,
-                                                         staircase=STAIRCASE)
+                                                         decay_steps=decay_steps,
+                                                         decay_rate=decay_rate,
+                                                         staircase=staircase)
         opt_op = tf.train.GradientDescentOptimizer(learning_rate=decay_learning_rate)
     elif optimizer == "momentum":
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
@@ -497,9 +495,9 @@ def model_fn(features, labels, mode, params):
     elif optimizer == "momentum-with-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
-                                                         decay_steps=DECAY_STEPS,
-                                                         decay_rate=DECAY_RATE,
-                                                         staircase=STAIRCASE)
+                                                         decay_steps=decay_steps,
+                                                         decay_rate=decay_rate,
+                                                         staircase=staircase)
         opt_op = tf.train.MomentumOptimizer(learning_rate=decay_learning_rate,
                                             momentum=0.9,
                                             use_nesterov=False)
@@ -510,9 +508,9 @@ def model_fn(features, labels, mode, params):
     elif optimizer == "nesterov-with-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
-                                                         decay_steps=DECAY_STEPS,
-                                                         decay_rate=DECAY_RATE,
-                                                         staircase=STAIRCASE)
+                                                         decay_steps=decay_steps,
+                                                         decay_rate=decay_rate,
+                                                         staircase=staircase)
         opt_op = tf.train.MomentumOptimizer(learning_rate=decay_learning_rate,
                                             momentum=0.9,
                                             use_nesterov=True)

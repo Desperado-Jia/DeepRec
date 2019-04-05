@@ -588,11 +588,6 @@ def model_fn(features, labels, mode, params):
     if (mode == tf.estimator.ModeKeys.TRAIN):
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
 
-
-def set_dist():
-    pass
-
-
 def main(unused_argv):
     # ----------Declare all hyperparameters of terminal interface----------
     phase = FLAGS.phase
