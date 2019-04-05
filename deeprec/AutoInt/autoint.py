@@ -112,3 +112,50 @@ def model_fn(features, labels, mode, params):
     reuse = params["reuse"]
     seed = params["seed"]
 
+    if seed != None:
+        tf.set_random_seed(seed=seed)
+
+    with tf.variable_scope(name_or_scope="inference", reuse=reuse):
+        with tf.name_scope(name="input-layer"):
+            ids = features[name_feat_inds]
+            x = features[name_feat_vals]
+
+        with tf.name_scope(name="embedding-layer"):
+            V = tf.get_variable(name="V",
+                                shape=[feat_size, embed_size],
+                                dtype=dtype,
+                                initializer=tf.glorot_normal_initializer(dtype=dtype),
+                                regularizer=None)
+            e = tf.nn.embedding_lookup(params=V, ids=ids) # A tensor in shape of (None, field_size, embed_size)
+            x = tf.expand_dims(input=x, axis=-1) # A tensor in shape of (None, field_size, 1)
+            embedding = tf.multiply(x=x, y=e) # A tensor in shape of (None, field_size, embed_size)
+
+        with tf.name_scope(name="interacting-layer"):
+
+
+    return embedding
+
+
+if __name__ == '__main__':
+    features, labels = input_fn(filenames=["..//..//examples//Adventure-Works-Cycles//train.txt"],
+                                delimiter=" ",
+                                separator=":",
+                                batch_size=32,
+                                epochs=10,
+                                shuffle=False)
+    hparams = {
+        "task": "binary",
+        "field_size": 13,
+        "feat_size": 110,
+        "embed_size": 16,
+        "dtype": tf.float32,
+        "name_feat_inds": "inds",
+        "name_feat_vals": "vals",
+        "reuse": tf.AUTO_REUSE,
+        "seed": 2019
+    }
+
+    result = model_fn(features=features, labels=labels, mode=tf.estimator.ModeKeys.TRAIN, params=hparams)
+    with tf.Session() as sess:
+        sess.run(fetches=tf.global_variables_initializer())
+        r = sess.run(fetches=result)
