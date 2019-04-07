@@ -8,7 +8,7 @@ python3 deepfm.py \
 --delimiter " " \
 --separator ":" \
 --batch_size 64 \
---epochs 100 \
+--epochs 10 \
 --shuffle=False \
 --task "binary" \
 --field_size 13 \
