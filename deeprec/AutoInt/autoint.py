@@ -105,7 +105,8 @@ def model_fn(features, labels, mode, params):
     field_size = params["field_size"]
     feat_size = params["feat_size"]
     embed_size = params["embed_size"]
-
+    hidden_size = params["hidden_size"]
+    multi_head_size = params["multi_head_size"]
     dtype = params["dtype"]
     name_feat_inds = params["name_feat_inds"]
     name_feat_vals = params["name_feat_vals"]
@@ -117,8 +118,9 @@ def model_fn(features, labels, mode, params):
 
     with tf.variable_scope(name_or_scope="inference", reuse=reuse):
         with tf.name_scope(name="input-layer"):
-            ids = features[name_feat_inds]
-            x = features[name_feat_vals]
+            ids = features[name_feat_inds] # A tensor in shape of (None, field_size)
+            x = features[name_feat_vals] # A tensor in shape of (None, field_size)
+            batch_size = tf.shape(input=x)[0]
 
         with tf.name_scope(name="embedding-layer"):
             V = tf.get_variable(name="V",
@@ -131,9 +133,29 @@ def model_fn(features, labels, mode, params):
             embedding = tf.multiply(x=x, y=e) # A tensor in shape of (None, field_size, embed_size)
 
         with tf.name_scope(name="interacting-layer"):
+            WQ = tf.get_variable(name="WQ",
+                                 shape=[multi_head_size, embed_size, hidden_size],
+                                 dtype=dtype,
+                                 initializer=tf.glorot_normal_initializer(dtype=dtype),
+                                 regularizer=None)
+            WK = tf.get_variable(name="WK",
+                                 shape=[multi_head_size, embed_size, hidden_size],
+                                 dtype=dtype,
+                                 initializer=tf.glorot_normal_initializer(dtype=dtype),
+                                 regularizer=None)
+            WV = tf.get_variable(name="WV",
+                                 shape=[multi_head_size, embed_size, hidden_size],
+                                 dtype=dtype,
+                                 initializer=tf.glorot_normal_initializer(dtype=dtype),
+                                 regularizer=None)
+            WQt = tf.transpose(a=WQ, perm=[1, 0, 2]) # A tensor in shape of (embed_size, multi_head_size, hidden_size)
+            WQtr = tf.reshape(tensor=WQt, shape=[embed_size, multi_head_size * hidden_size]) # A tensor in shape of (embed_size, multi_head_size * hidden_size)
+            embedding = tf.reshape(tensor=embedding, shape=[batch_size * field_size, embed_size])
+            query = tf.matmul(a=embedding, b=WQtr) # A tensor in shape of (batch_size * field_size, multi_head_size * hidden_size)
+            query = tf.reshape(tensor=query, shape=[batch_size, field_size, multi_head_size, hidden_size])
+            query = tf.transpose(a=query, perm=[2, 0, 1, 3])
 
-
-    return embedding
+    return query
 
 
 if __name__ == '__main__':
@@ -148,6 +170,8 @@ if __name__ == '__main__':
         "field_size": 13,
         "feat_size": 110,
         "embed_size": 16,
+        "hidden_size": 12,
+        "multi_head_size": 8,
         "dtype": tf.float32,
         "name_feat_inds": "inds",
         "name_feat_vals": "vals",
