@@ -36,7 +36,7 @@ Note: This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tens
 |    Model    | Conference | Paper                                                        | Contain |
 | :---------: | :--------: | ------------------------------------------------------------ | :-----: |
 |  Item2vec   | RecSys'16  | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |    ✖    |
-| AirbnbEmbed |   KDD'18   | [Real-time Personalization using Embeddings for Search Ranking at Airbnb]() |    ✖    |
+| AirbnbEmbed |   KDD'18   | [Real-time Personalization using Embeddings for Search Ranking at Airbnb](https://astro.temple.edu/~tua95067/kdd2018.pdf) |    ✖    |
 
 ### CTR Models
 
