@@ -268,6 +268,8 @@ def model_fn(features, labels, mode, params):
     name_feat_vals = params["name_feat_vals"]
     reuse = params["reuse"]
     seed = params["seed"]
+    # -----Hyperparameters for threshold for binary classification task
+    threshold = 0.5
     # -----Hyperparameters for exponential decay(*manual optional*)-----
     decay_steps = 5000
     decay_rate = 0.998
@@ -319,9 +321,9 @@ def model_fn(features, labels, mode, params):
             embedding = tf.nn.embedding_lookup(params=V, ids=ids) # A tensor in shape of (None, field_size, field_size, embed_size)
             yffm = tf.constant(value=1, dtype=dtype, shape=[1])
             for i in range(field_size):
-                # -----for each valid feature
+                # -----for each valid feature-----
                 for j in range(i + 1, field_size):
-                    # -----for each field j to be interacted with feature i
+                    # -----for each field j to be interacted with feature i-----
                     key = embedding[:, i, j, :] # A tensor in shape of (None, embed_size)
                     query = embedding[: , j, i, :] # A tensor in shape of (None, embed_size)
                     weight = tf.multiply(x=key, y=query) # A tensor in shape of (None, embed_size)
@@ -343,8 +345,8 @@ def model_fn(features, labels, mode, params):
 
             if task == "binary":
                 predictions = {
-                    name_probability_output: tf.sigmoid(x=logits),
-                    name_classification_output: tf.cast(x=tf.round(x=tf.sigmoid(x=logits)), dtype=tf.uint8)
+                    name_probability_output: tf.nn.sigmoid(x=logits),
+                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.uint8)
                 }
             elif task == "regression":
                 predictions = {

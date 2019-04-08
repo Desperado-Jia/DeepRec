@@ -557,6 +557,8 @@ def model_fn(features, labels, mode, params):
     name_feat_inds_behaviors = params["name_feat_inds_behaviors"]
     reuse = params["reuse"]
     seed = params["seed"]
+    # -----Hyperparameters for threshold for binary classification task
+    threshold = 0.5
     # -----Hyperparameters for exponential decay(*manual optional*)-----
     decay_steps = 5000
     decay_rate = 0.998
@@ -642,10 +644,16 @@ def model_fn(features, labels, mode, params):
                                    keepdims=False) # A tensor in shape of (None, embed_size_id)
 
         with tf.name_scope(name="concat-flatten-layer"):
-            vu = tf.reshape(tensor=vu, shape=[-1, field_size_user_profile * embed_size_user_profile])
-            vi = tf.reshape(tensor=vi, shape=[-1, field_size_item_profile * embed_size_item_profile])
-            vc = tf.reshape(tensor=vc, shape=[-1, field_size_context * embed_size_context])
-            logits = tf.concat(values=[vu, vi, vc, vca, vembed], axis=1) # A tensor in shape of (None, dnn_input_size)
+            x_u_reshape = tf.expand_dims(input=x_u, axis=-1) # A tensor in shape of (None, field_size_user_profile, 1)
+            x_i_reshape = tf.expand_dims(input=x_i, axis=-1) # A tensor in shape of (None, field_size_item_profile, 1)
+            x_co_reshape = tf.expand_dims(input=x_co, axis=-1) # A tensor in shape of (None, field_size_context, 1)
+            eu = tf.multiply(x=x_u_reshape, y=vu) # A tensor in shape of (None, field_size_user_profile, embed_size_user_profile)
+            ei = tf.multiply(x=x_i_reshape, y=vi) # A tensor in shape of (None, field_size_item_profile, embed_size_item_profile)
+            ec = tf.multiply(x=x_co_reshape, y=vc) # A tensor in shape of (None, field_size_context, embed_size_context)
+            eu_reshape = tf.reshape(tensor=eu, shape=[-1, field_size_user_profile * embed_size_user_profile])
+            ei_reshape = tf.reshape(tensor=ei, shape=[-1, field_size_item_profile * embed_size_item_profile])
+            ec_rehsape = tf.reshape(tensor=ec, shape=[-1, field_size_context * embed_size_context])
+            logits = tf.concat(values=[eu_reshape, ei_reshape, ec_rehsape, vca, vembed], axis=1) # A tensor in shape of (None, dnn_input_size)
 
         with tf.name_scope(name="dnn-hidden-layer"):
             for l in range(len(hidden_sizes)):
@@ -696,7 +704,7 @@ def model_fn(features, labels, mode, params):
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
                 predictions = {
                     name_probability_output: tf.nn.sigmoid(x=logits),
-                    name_classification_output: tf.cast(x=tf.round(x=tf.nn.sigmoid(x=logits)), dtype=tf.uint8)
+                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.uint8)
                 }
             elif task == "multi":
                 predictions = {

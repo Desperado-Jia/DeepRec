@@ -351,6 +351,8 @@ def model_fn(features, labels, mode, params):
     name_feat_inds_categorical = params["name_feat_inds_categorical"]
     reuse = params["reuse"]
     seed = params["seed"]
+    # -----Hyperparameters for threshold for binary classification task
+    threshold = 0.5
     # -----Hyperparameters for exponential decay(*manual optional*)-----
     decay_steps = 5000
     decay_rate = 0.998
@@ -459,8 +461,8 @@ def model_fn(features, labels, mode, params):
             if task == "binary":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (batch)
                 predictions = {
-                    name_probability_output: tf.sigmoid(x=logits),
-                    name_classification_output: tf.cast(x=tf.round(x=tf.sigmoid(x=logits)), dtype=tf.uint8)
+                    name_probability_output: tf.nn.sigmoid(x=logits),
+                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.uint8)
                 }
             elif task == "regression":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (batch)

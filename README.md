@@ -22,11 +22,17 @@ Note: This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tens
 
 ## Model list
 
+### Collaborative Filtering based Models
+
+|     Model     | Conference | Paper                                                        | Contain |
+| :-----------: | :--------: | ------------------------------------------------------------ | :-----: |
+|      SVD      |            | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |    ✖    |
+
 ### CTR Models
 
 |     Model     | Conference | Paper                                                        | Contain |
 | :-----------: | :--------: | ------------------------------------------------------------ | :-----: |
-| LR (Baseline) |            | [An Introduction to Logistic Regression Analysis and Reporting](https://datajobs.com/data-science-repo/Logistic-Regression-[Peng-et-al].pdf) |    ✖    |
+| LR (Baseline) |            | [An Introduction to Logistic Regression Analysis and Reporting](https://datajobs.com/data-science-repo/Logistic-Regression-[Peng-et-al].pdf) |    ✔    |
 |      FM       |  ICDM'10   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |    ✖   |
 |      FFM      | RecSys'16  | [Field-aware Factorization Machines for CTR Prediction](https://www.csie.ntu.edu.tw/~cjlin/papers/ffm.pdf) **[Criteo]** |    ✔    |
 |  Wide & Deep  |  DLRS'16   | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) **[Google]** |    ✖    |
