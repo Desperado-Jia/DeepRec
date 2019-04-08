@@ -10,7 +10,7 @@ Note: This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tens
 ![modern-recsys-arch](./docs/figure/modern-recsys-arch.png)
 
 * **Retrieval Strategy**
-  * Collaborative filtering
+  * Collaborative filtering (e.g. SVD)
   * Embedding (e.g. word2vec)
   * Semantic matching
 * **Ranking Strategy**
@@ -24,9 +24,12 @@ Note: This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tens
 
 ### Collaborative Filtering based Models
 
-|     Model     | Conference | Paper                                                        | Contain |
-| :-----------: | :--------: | ------------------------------------------------------------ | :-----: |
-|      SVD      |            | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |    ✖    |
+|   Model   | Year | Paper                                                        | Contain |
+| :-------: | :--: | ------------------------------------------------------------ | :-----: |
+|    SVD    | 2008 | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |    ✖    |
+|   SVD++   | 2008 | [Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model](https://www.cs.rochester.edu/twiki/pub/Main/HarpSeminar/Factorization_Meets_the_Neighborhood-_a_Multifaceted_Collaborative_Filtering_Model.pdf) |    ✖    |
+| TrustSVD  | 2015 | [TrustSVD: Collaborative Filtering with Both the Explicit and Implicit Influence of User Trust and of Item Ratings](https://www.librec.net/luckymoon.me/papers/guo2015trustsvd.pdf) |    ✖    |
+| AutoSVD++ | 2017 | [AutoSVD++: An Eicient Hybrid Collaborative Filtering Model via Contractive Auto-encoders](https://arxiv.org/pdf/1704.00551.pdf) |    ✖    |
 
 ### CTR Models
 
