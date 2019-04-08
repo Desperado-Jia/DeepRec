@@ -11,4 +11,4 @@ curl -d "{
         \"vals\": [0.221519,1,1,1,1,1,1,1,1,1,1,1,1]
     }
     ]
-}" -X POST http://localhost:8501/v1/models/DeepFM:predict
+}" -X POST http://localhost:8501/v1/models/FM:predict

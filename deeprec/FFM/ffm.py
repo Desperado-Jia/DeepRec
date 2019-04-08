@@ -346,7 +346,7 @@ def model_fn(features, labels, mode, params):
             if task == "binary":
                 predictions = {
                     name_probability_output: tf.nn.sigmoid(x=logits),
-                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.uint8)
+                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.int32)
                 }
             elif task == "regression":
                 predictions = {
@@ -401,7 +401,7 @@ def model_fn(features, labels, mode, params):
     global_step = tf.train.get_or_create_global_step(graph=tf.get_default_graph()) # Define a global step for training step counter
     if optimizer == "sgd":
         opt_op = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
-    elif optimizer == "sgd-with-exp-decay":
+    elif optimizer == "sgd-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,
@@ -412,7 +412,7 @@ def model_fn(features, labels, mode, params):
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                             momentum=0.9,
                                             use_nesterov=False)
-    elif optimizer == "momentum-with-exp-decay":
+    elif optimizer == "momentum-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,
@@ -425,7 +425,7 @@ def model_fn(features, labels, mode, params):
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                             momentum=0.9,
                                             use_nesterov=True)
-    elif optimizer == "nesterov-with-exp-decay":
+    elif optimizer == "nesterov-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,

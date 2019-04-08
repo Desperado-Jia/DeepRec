@@ -9,7 +9,7 @@ description:
     The algorithm is developed with TensorFlow Estimator based on TensorFlow 1.12.0 version.
 """
 import tensorflow as tf
-import tensorflow.contrib as tfc
+from tensorflow.contrib.layers import xavier_initializer, l2_regularizer
 import os
 
 FLAGS = tf.flags.FLAGS
@@ -332,15 +332,15 @@ def model_fn(features, labels, mode, params):
                                 shape=[1],
                                 dtype=dtype,
                                 initializer=tf.zeros_initializer(dtype=dtype),
-                                regularizer=tfc.layers.l2_regularizer(scale=lamb),
+                                regularizer=l2_regularizer(scale=lamb),
                                 trainable=use_global_bias)
 
         with tf.name_scope(name="lr-part"):
             W = tf.get_variable(name="W",
                                 shape=[feat_size],
                                 dtype=dtype,
-                                initializer=tfc.layers.xavier_initializer(uniform=True, dtype=dtype), # *manual optional*
-                                regularizer=tfc.layers.l2_regularizer(scale=lamb),
+                                initializer=xavier_initializer(uniform=True, dtype=dtype), # *manual optional*
+                                regularizer=l2_regularizer(scale=lamb),
                                 trainable=use_linear)
             # -----embedding lookup op for first order weights-----
             w = tf.nn.embedding_lookup(params=W, ids=ids) # A tensor in shape of (None, field_size)
@@ -352,7 +352,7 @@ def model_fn(features, labels, mode, params):
             V = tf.get_variable(name="V",
                                 shape=[feat_size, embed_size],
                                 dtype=dtype,
-                                initializer=tfc.layers.xavier_initializer(uniform=False, dtype=dtype), # manual optional
+                                initializer=xavier_initializer(uniform=False, dtype=dtype), # manual optional
                                 regularizer=None, # *manual optional*
                                 trainable=True)
             # -----embedding lookup op for second order weights-----
@@ -375,7 +375,7 @@ def model_fn(features, labels, mode, params):
                                        units=hidden_sizes[l],
                                        activation=None,
                                        use_bias=use_hidden_bias,
-                                       kernel_initializer=tfc.layers.xavier_initializer(uniform=True, dtype=dtype),
+                                       kernel_initializer=xavier_initializer(uniform=True, dtype=dtype),
                                        bias_initializer=tf.zeros_initializer(dtype=dtype),
                                        kernel_regularizer=None, # *manual optional*
                                        bias_regularizer=None, # *manual optional*
@@ -409,7 +409,7 @@ def model_fn(features, labels, mode, params):
                                    units=1,
                                    activation=None,
                                    use_bias=False,
-                                   kernel_initializer=tfc.layers.xavier_initializer(uniform=True, dtype=dtype),
+                                   kernel_initializer=xavier_initializer(uniform=True, dtype=dtype),
                                    kernel_regularizer=None, # *manual optional*
                                    trainable=True,
                                    name="mlp-dense-output") # A tensor in shape of (None, 1)
@@ -428,7 +428,7 @@ def model_fn(features, labels, mode, params):
             if task == "binary":
                 predictions = {
                     name_probability_output: tf.nn.sigmoid(x=logits),
-                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.uint8)
+                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.int32)
                 }
             elif task == "regression":
                 predictions = {
@@ -483,7 +483,7 @@ def model_fn(features, labels, mode, params):
     global_step = tf.train.get_or_create_global_step(graph=tf.get_default_graph()) # Define a global step for training step counter
     if optimizer == "sgd":
         opt_op = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
-    elif optimizer == "sgd-with-exp-decay":
+    elif optimizer == "sgd-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,
@@ -494,7 +494,7 @@ def model_fn(features, labels, mode, params):
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                             momentum=0.9,
                                             use_nesterov=False)
-    elif optimizer == "momentum-with-exp-decay":
+    elif optimizer == "momentum-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,
@@ -507,7 +507,7 @@ def model_fn(features, labels, mode, params):
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                             momentum=0.9,
                                             use_nesterov=True)
-    elif optimizer == "nesterov-with-exp-decay":
+    elif optimizer == "nesterov-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,

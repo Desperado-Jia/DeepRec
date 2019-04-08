@@ -9,7 +9,7 @@ python3 deepfm.py \
 --separator ":" \
 --batch_size 64 \
 --epochs 10 \
---shuffle=False \
+--shuffle=True \
 --task "binary" \
 --field_size 13 \
 --feat_size 110 \

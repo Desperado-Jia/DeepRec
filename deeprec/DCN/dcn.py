@@ -462,7 +462,7 @@ def model_fn(features, labels, mode, params):
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (batch)
                 predictions = {
                     name_probability_output: tf.nn.sigmoid(x=logits),
-                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.uint8)
+                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.int32)
                 }
             elif task == "regression":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (batch)
@@ -521,7 +521,9 @@ def model_fn(features, labels, mode, params):
             }
         elif task == "multi":
             eval_metric_ops = {
-                "recall": tf.metrics.recall(labels=labels, predictions=predictions[name_classification_output]) # ???
+                "confusion-matrix": tf.confusion_matrix(labels=labels,
+                                                        predictions=predictions[name_classification_output],
+                                                        num_classes=output_size)
             }
         elif task == "regression":
             eval_metric_ops = {
@@ -535,7 +537,7 @@ def model_fn(features, labels, mode, params):
     global_step = tf.train.get_or_create_global_step(graph=tf.get_default_graph()) # Define a global step for training step counter
     if optimizer == "sgd":
         opt_op = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
-    elif optimizer == "sgd-with-exp-decay":
+    elif optimizer == "sgd-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,
@@ -546,7 +548,7 @@ def model_fn(features, labels, mode, params):
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                             momentum=0.9,
                                             use_nesterov=False)
-    elif optimizer == "momentum-with-exp-decay":
+    elif optimizer == "momentum-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,
@@ -559,7 +561,7 @@ def model_fn(features, labels, mode, params):
         opt_op = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                             momentum=0.9,
                                             use_nesterov=True)
-    elif optimizer == "nesterov-with-exp-decay":
+    elif optimizer == "nesterov-exp-decay":
         decay_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
                                                          global_step=global_step,
                                                          decay_steps=decay_steps,
