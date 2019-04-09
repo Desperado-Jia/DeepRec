@@ -1,8 +1,15 @@
-# DeepRec
+# Daiquiri (DeepRec)
 
-DeepRec is an easy-to-use, end-to-end and scalable toolkit of deep-learning and reinforcement learning based recommender system models (e.g. Click Through Rate) which can be used for building your own custom recommender system efficiently and easily.
+**Daiquiri** is an easy-to-use, end-to-end large scale and scalable toolkit of machine-learning, deep-learning and reinforcement learning based recommender system, which can be used for building your own custom recommender system efficiently and easily.
 
-Note: This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow high level API Dataset and Estimator for constructing input function and model function, tensorflow-serving for serving the model.
+This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow high level API Dataset and Estimator for constructing input function and model function, tensorflow-serving for serving the model.
+
+**Essential tools**:
+
+* *Python3.6*
+* *TensorFlow(1.12.0)*
+* *Docker*
+* *TensorFlow-Serving*
 
 
 ## Architecture
@@ -26,7 +33,7 @@ Note: This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tens
 
 | Model | Conference | Paper | Contain |
 | :---: | :--------: | ----- | :---: |
-|  SVD  | KDD'08 | [Matrix Factorization Techniques for Recommender Systems](https://www.ime.usp.br/~jstern/miscellanea/seminars/nnmatrix/Koren07.pdf) | ✖ |
+|  SVD  | IEEE Computer Society'09 | [Matrix Factorization Techniques for Recommender Systems](https://www.ime.usp.br/~jstern/miscellanea/seminars/nnmatrix/Koren07.pdf) | ✔ |
 | SVD++ | KDD'08 | [Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model](https://www.cs.rochester.edu/twiki/pub/Main/HarpSeminar/Factorization_Meets_the_Neighborhood-_a_Multifaceted_Collaborative_Filtering_Model.pdf) | ✖ |
 | TrustSVD | AAAI'15 | [TrustSVD: Collaborative Filtering with Both the Explicit and Implicit Influence of User Trust and of Item Ratings](https://www.librec.net/luckymoon.me/papers/guo2015trustsvd.pdf) | ✖ |
 | AutoSVD++ | SIGIR'17 | [AutoSVD++: An Efficient Hybrid Collaborative Filtering Model via Contractive Auto-encoders](https://arxiv.org/pdf/1704.00551.pdf) | ✖ |
