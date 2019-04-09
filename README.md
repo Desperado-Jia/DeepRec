@@ -19,11 +19,11 @@ This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow
 * **Retrieval Strategy**
   * Collaborative filtering (e.g. SVD)
   * Embedding (e.g. item2vec)
-  * Semantic matching
+  * Semantic matching (e.g. DSSM)
 * **Ranking Strategy**
-  * Click through rate models
+  * Click through rate models (e.g. FM)
 * **Exploration & Exploitation**
-  * Reinforcement learning models
+  * Reinforcement learning models (e.g DQN)
 
 
 
