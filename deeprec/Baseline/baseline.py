@@ -6,7 +6,7 @@ description:
     An implement of Baseline model, nemely:
         * Logistic Regression for binary classification task;
         * Softmax Regression for multi classification task;
-        * Linear Regression foe regression task.
+        * Linear Regression for regression task.
     The algorithm is developed with TensorFlow Estimator based on TensorFlow 1.12.0 version.
 """
 import tensorflow as tf
