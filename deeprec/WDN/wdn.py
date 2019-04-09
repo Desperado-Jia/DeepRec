@@ -756,8 +756,12 @@ def main(unused_argv):
             print(ele)
     elif phase == "export":
         features = {
-            name_feat_vals_numerical: tf.placeholder(dtype=dtype, shape=[None, field_size_numerical], name=name_feat_vals_numerical),
-            name_feat_inds_categorical: tf.placeholder(dtype=tf.int32, shape=[None, field_size_categorical], name=name_feat_inds_categorical)
+            name_feat_vals_numerical: tf.placeholder(dtype=dtype,
+                                                     shape=[None, field_size_numerical],
+                                                     name=name_feat_vals_numerical),
+            name_feat_inds_categorical: tf.placeholder(dtype=tf.int32,
+                                                       shape=[None, field_size_categorical],
+                                                       name=name_feat_inds_categorical)
         }
         serving_input_receiver_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(features=features)
         estimator.export_savedmodel(export_dir_base=export_dir, serving_input_receiver_fn=serving_input_receiver_fn)
