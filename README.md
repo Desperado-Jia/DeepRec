@@ -38,7 +38,7 @@ This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow
 | TrustSVD | AAAI'15 | [TrustSVD: Collaborative Filtering with Both the Explicit and Implicit Influence of User Trust and of Item Ratings](https://www.librec.net/luckymoon.me/papers/guo2015trustsvd.pdf) | ✖ |
 | AutoSVD++ | SIGIR'17 | [AutoSVD++: An Efficient Hybrid Collaborative Filtering Model via Contractive Auto-encoders](https://arxiv.org/pdf/1704.00551.pdf) | ✖ |
 
-###Embedding Based Models
+### Embedding Based Models
 
 |    Model    | Conference | Paper                                                        | Contain |
 | :---------: | :--------: | ------------------------------------------------------------ | :-----: |
