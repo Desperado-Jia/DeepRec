@@ -702,14 +702,18 @@ def model_fn(features, labels, mode, params):
                                      name="mlp-dense-output") # A tensor in shape of (None, output_size)
             if task == "binary":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
+                probs = tf.nn.sigmoid(x=logits)
+                classes = tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.int32)
                 predictions = {
-                    name_probability_output: tf.nn.sigmoid(x=logits),
-                    name_classification_output: tf.cast(x=tf.greater(x=tf.nn.sigmoid(x=logits), y=threshold), dtype=tf.int32)
+                    name_probability_output: probs,
+                    name_classification_output: classes
                 }
             elif task == "multi":
+                probs_dist = tf.nn.softmax(logits=logits, axis=-1)
+                classes = tf.argmax(input=logits, axis=-1, output_type=tf.int32)
                 predictions = {
-                    name_probability_output: tf.nn.softmax(logits=logits, axis=-1),
-                    name_classification_output: tf.argmax(input=logits, axis=-1, output_type=tf.int32)
+                    name_probability_output: probs_dist,
+                    name_classification_output: classes
                 }
             elif task == "regression":
                 logits = tf.squeeze(input=logits, axis=1) # A tensor in shape of (None)
