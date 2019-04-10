@@ -10,3 +10,5 @@ description:
 """
 import tensorflow as tf
 
+def input_fn(filenames, ):
+    pass
