@@ -1,6 +1,6 @@
 # Daiquiri
 
-**Daiquiri** is an easy-to-use, end-to-end and large scale scalable toolkit of machine-learning, deep-learning and reinforcement learning based sparse learning system, which can be used for building your own custom recommender system and detection system easily and efficiently.
+**Daiquiri** is an easy-to-use, end-to-end and large scale scalable toolkit of machine-learning, deep-learning and reinforcement learning based sparse learning **algorithm** system, which can be used for building your own custom <font color=Red>***Recommender System***</font> and <font color=Red>***Detection System***</font> easily and efficiently.
 
 This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow high level API Dataset and Estimator for constructing input function and model function, tensorflow-serving for serving the model. 
 
