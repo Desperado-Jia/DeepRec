@@ -7,8 +7,8 @@ This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow
 In training phase, the system support three kinds of device topology:
 
 * Single machine CPU version
-* Single machine multi GPUs version (e.g. Ring Allreduce)
-* Multi machine multi GPUs version (e.g. Parameter Server)
+* Single machine multi GPUs version (e.g. *Ring Allreduce*)
+* Multi machine multi GPUs version (e.g. *Parameter Server*)
 
 **Essential tools**:
 
