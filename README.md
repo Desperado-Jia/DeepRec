@@ -17,10 +17,6 @@ In training phase, the system support three kinds of device topology:
 * *Docker*
 * *TensorFlow-Serving*
 
-## Contributor
-
-- Tong Jia – cecilio.jia@gmail.com – [https://github.com/Cecilio-Jia](https://github.com/Cecilio-Jia)
-
 
 ## Architecture
 
@@ -53,6 +49,7 @@ In training phase, the system support three kinds of device topology:
 |    Model    | Conference | Paper                                                        | Contain |
 | :---------: | :--------: | ------------------------------------------------------------ | :-----: |
 |  Item2vec   | RecSys'16  | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |    ✖    |
+|     LTR     |   KDD'18   | [Learning and Transferring IDs Representation in E-commerce](https://arxiv.org/pdf/1712.08289.pdf) |    ✖    |
 | AirbnbEmbed |   KDD'18   | [Real-time Personalization using Embeddings for Search Ranking at Airbnb](https://astro.temple.edu/~tua95067/kdd2018.pdf) |    ✖    |
 
 ### CTR Models
@@ -71,6 +68,7 @@ In training phase, the system support three kinds of device topology:
 |      DCN      |   KDD'17   | [Deep & Cross Network for Ad Click Predictions](https://arxiv.org/pdf/1708.05123.pdf) |    ✔    |
 |      DIN      |   KDD'18   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) **[Alibaba]** |    ✔    |
 |    AutoInt    |  arxiv'18  | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |    ✖    |
+| TEM | WWW'18 | [TEM: Tree-enhanced Embedding Model for Explainable Recommendation](https://www.comp.nus.edu.sg/~xiangnan/papers/www18-tem.pdf) | ✖ |
 |     FNFM      |  arxiv'19  | [Field-aware Neural Factorization Machine for Click-Through Rate Prediction](https://arxiv.org/pdf/1902.09096.pdf) |    ✖    |
 
 ## Contributor
