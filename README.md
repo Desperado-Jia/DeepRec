@@ -1,5 +1,9 @@
 # Daiquiri
 
+## Contributor
+
+Tong Jia – cecilio.jia@gmail.com – [https://github.com/Cecilio-Jia](https://github.com/Cecilio-Jia)
+
 **Daiquiri** is an easy-to-use, end-to-end and large scale scalable toolkit of machine-learning, deep-learning and reinforcement learning based sparse learning **algorithm** system, which can be used for building your own custom <font color=Red>***Recommender System***</font> and <font color=Red>***Detection System***</font> easily and efficiently.
 
 This package is based on Python3.6, **TensorFlow(1.12.0)**, and using tensorflow high level API Dataset and Estimator for constructing input function and model function, tensorflow-serving for serving the model. 
@@ -70,7 +74,3 @@ In training phase, the system support three kinds of device topology:
 |    AutoInt    |  arxiv'18  | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |    ✖    |
 | TEM | WWW'18 | [TEM: Tree-enhanced Embedding Model for Explainable Recommendation](https://www.comp.nus.edu.sg/~xiangnan/papers/www18-tem.pdf) | ✖ |
 |     FNFM      |  arxiv'19  | [Field-aware Neural Factorization Machine for Click-Through Rate Prediction](https://arxiv.org/pdf/1902.09096.pdf) |    ✖    |
-
-## Contributor
-
-Tong Jia – cecilio.jia@gmail.com – [https://github.com/Cecilio-Jia](https://github.com/Cecilio-Jia)
